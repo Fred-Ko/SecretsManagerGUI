@@ -19,8 +19,7 @@ interface Props {
   onAdd: () => void;
   onBulkSelect: (secrets: Secret[]) => void;
   onDelete: () => void;
-  filter?: string;
-  filterType?: 'name' | 'description' | 'key' | 'value';
+  searchTerms?: string[];
 }
 
 export default function SecretList({
@@ -28,43 +27,25 @@ export default function SecretList({
   onSelect,
   onBulkSelect,
   onDelete,
-  filter = '',
-  filterType = 'name',
+  searchTerms = [],
 }: Props) {
   const selectedSecrets = useMemo(() => new Set<string>(), []);
 
   const filteredSecrets = useMemo(() => {
-    return secrets.filter((secret) => {
-      const searchLower = filter.toLowerCase();
+    if (!searchTerms.length) return secrets;
 
-      switch (filterType) {
-        case 'name':
-          return secret.Name?.toLowerCase().includes(searchLower);
-        case 'description':
-          return secret.Description?.toLowerCase().includes(searchLower);
-        case 'key':
-          try {
-            const value = JSON.parse(secret.SecretString || '{}');
-            return Object.keys(value).some((key) =>
-              key.toLowerCase().includes(searchLower),
-            );
-          } catch {
-            return false;
-          }
-        case 'value':
-          try {
-            const value = JSON.parse(secret.SecretString || '{}');
-            return Object.values(value).some((val) =>
-              String(val).toLowerCase().includes(searchLower),
-            );
-          } catch {
-            return false;
-          }
-        default:
-          return true;
-      }
+    return secrets.filter((secret) => {
+      const searchTarget = [
+        secret.Name,
+        secret.Description,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      // 모든 검색어가 포함되어 있어야 함 (AND 조건)
+      return searchTerms.every(term =>
+        searchTarget.includes(term.toLowerCase())
+      );
     });
-  }, [secrets, filter, filterType]);
+  }, [secrets, searchTerms]);
 
   const handleToggleSelect = (secret: Secret, checked: boolean) => {
     if (checked) {
@@ -79,7 +60,7 @@ export default function SecretList({
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          {filter ? '검색 결과가 없습니다.' : '시크릿이 없습니다.'}
+          {searchTerms.length > 0 ? '검색 결과가 없습니다.' : '시크릿이 없습니다.'}
         </Typography>
       </Box>
     );

@@ -130,7 +130,11 @@ export default function SecretDetail({ secret, onEdit }: Props) {
               >
                 {key}
               </TableCell>
-              <TableCell sx={{ fontFamily: 'monospace' }}>
+              <TableCell sx={{
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
                 {String(value)}
               </TableCell>
               <TableCell>

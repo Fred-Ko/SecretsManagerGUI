@@ -71,33 +71,43 @@ export function useSecrets({
     setIsLoading(true);
     try {
       const client = createSecretsManagerClient(awsCredentials);
-      const listCommand = new ListSecretsCommand({});
-      const listResponse = await client.send(listCommand);
+      let nextToken: string | undefined;
+      let allSecrets: Secret[] = [];
 
-      if (listResponse.SecretList) {
-        const secretsWithValues = await Promise.all(
-          listResponse.SecretList.map(async (secret) => {
-            try {
-              const valueCommand = new GetSecretValueCommand({
-                SecretId: secret.ARN,
-              });
-              const valueResponse = await client.send(valueCommand);
-              return {
-                ...secret,
-                SecretString: valueResponse.SecretString,
-              } as Secret;
-            } catch (error) {
-              console.error(
-                `Failed to load secret value for ${secret.Name}:`,
-                error,
-              );
-              return secret as Secret;
-            }
-          }),
-        );
+      do {
+        const listCommand = new ListSecretsCommand({
+          NextToken: nextToken,
+          MaxResults: 100,
+        });
+        const listResponse = await client.send(listCommand);
 
-        setSecrets(secretsWithValues);
-      }
+        if (listResponse.SecretList) {
+          const secretsWithValues = await Promise.all(
+            listResponse.SecretList.map(async (secret) => {
+              try {
+                const valueCommand = new GetSecretValueCommand({
+                  SecretId: secret.ARN,
+                });
+                const valueResponse = await client.send(valueCommand);
+                return {
+                  ...secret,
+                  SecretString: valueResponse.SecretString,
+                } as Secret;
+              } catch (error) {
+                console.error(
+                  `Failed to load secret value for ${secret.Name}:`,
+                  error,
+                );
+                return secret as Secret;
+              }
+            }),
+          );
+          allSecrets = [...allSecrets, ...secretsWithValues];
+        }
+        nextToken = listResponse.NextToken;
+      } while (nextToken);
+
+      setSecrets(allSecrets);
     } catch (error) {
       onError(handleAwsError(error));
     } finally {

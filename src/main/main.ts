@@ -57,14 +57,7 @@ app.on('window-all-closed', () => {
 // AWS 자격 증명 처리
 ipcMain.handle('get-aws-credentials', async () => {
   try {
-    // 먼저 앱 설정 파일에서 읽기 시도
-    const appConfigPath = getAppConfigPath();
-    if (existsSync(appConfigPath)) {
-      const appConfig = JSON.parse(readFileSync(appConfigPath, 'utf-8'));
-      return appConfig;
-    }
-
-    // 앱 설정이 없으면 AWS 기본 자격 증명에서 읽기 시도
+    // AWS 기본 자격 증명에서 읽기 시도
     const credentialsPath = path.join(homedir(), '.aws', 'credentials');
     const configPath = path.join(homedir(), '.aws', 'config');
 
@@ -72,11 +65,18 @@ ipcMain.handle('get-aws-credentials', async () => {
       return null;
     }
 
+    console.log('Credentials file path:', credentialsPath);
+    console.log('Config file path:', configPath);
+
     const credentials = parse(readFileSync(credentialsPath, 'utf-8'));
     const config = parse(readFileSync(configPath, 'utf-8'));
     const profile = 'default';
 
+    console.log('Parsed credentials:', credentials);
+    console.log('Parsed config:', config);
+
     if (!credentials[profile]) {
+      console.log('No default profile found in credentials');
       return null;
     }
 

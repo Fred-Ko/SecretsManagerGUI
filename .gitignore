@@ -28,10 +28,8 @@ npm-debug.log.*
 *.sass.d.ts
 *.scss.d.ts
 
-.erb
 .secrets-manager
 node_modules
-release
 CHANGELOG.md
 CODE_OF_CONDUCT.md
 LICENSE
