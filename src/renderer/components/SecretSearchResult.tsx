@@ -1,4 +1,4 @@
-import { AutoFixHigh as UpdateIcon, ContentCopy as CopyIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { AutoFixHigh as UpdateIcon, ContentCopy as CopyIcon, Search as SearchIcon, Clear as ClearIcon, Add as AddIcon } from '@mui/icons-material';
 import {
   Button,
   Checkbox,
@@ -19,9 +19,11 @@ import {
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Secret } from '../../main/interfaces/SecretManager';
 import BatchUpdateDialog from './BatchUpdateDialog';
+import BatchAddDialog from './BatchAddDialog';
 import { FixedSizeList as List } from 'react-window';
 import { useSnackbar } from 'notistack';
 import ResizableColumn from './ResizableColumn';
+import SecretList from './SecretList';
 
 interface Props {
   secrets: Secret[];
@@ -29,7 +31,7 @@ interface Props {
   onBatchUpdate: (
     updates: Array<{ secret: Secret; key: string; newValue: string }>,
   ) => Promise<void>;
-  mode?: 'search' | 'batch-update';
+  mode?: 'search' | 'batch-update' | 'batch-add';
 }
 
 interface SearchResult {
@@ -52,6 +54,7 @@ export default function SecretSearchResult({
   secrets,
   onSecretSelect,
   onBatchUpdate,
+  mode = 'search',
 }: Props) {
   const [searchType, setSearchType] = useState<'key' | 'value'>('key');
   const [currentSearchType, setCurrentSearchType] = useState<'key' | 'value'>('key');
@@ -183,23 +186,39 @@ export default function SecretSearchResult({
     });
   }, [enqueueSnackbar]);
 
+  const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
+
   return (
     <>
       <Paper>
         <Toolbar sx={{ gap: 2, flexWrap: 'wrap', minHeight: 'auto', py: 1 }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
             <Typography variant="h6" component="div">
-              시크릿 검색
+              {mode === 'batch-add' ? '일괄 추가' : '시크릿 검색'}
             </Typography>
             {selectedResults.length > 0 && (
-              <Button
-                startIcon={<UpdateIcon />}
-                variant="contained"
-                size="small"
-                onClick={() => setIsBatchUpdateOpen(true)}
-              >
-                일괄 업데이트 ({selectedResults.length})
-              </Button>
+              <>
+                {mode === 'search' && (
+                  <Button
+                    startIcon={<UpdateIcon />}
+                    variant="contained"
+                    size="small"
+                    onClick={() => setIsBatchUpdateOpen(true)}
+                  >
+                    일괄 업데이트 ({selectedResults.length})
+                  </Button>
+                )}
+                {mode === 'batch-add' && (
+                  <Button
+                    startIcon={<AddIcon />}
+                    variant="contained"
+                    size="small"
+                    onClick={() => setIsBatchAddOpen(true)}
+                  >
+                    일괄 추가 ({selectedResults.length})
+                  </Button>
+                )}
+              </>
             )}
           </Box>
 
@@ -217,84 +236,138 @@ export default function SecretSearchResult({
               flex: 1,
               minWidth: 200,
             }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <TextField
-                  size="small"
-                  placeholder={nameSearchTerms.length ? "" : "시크릿 이름 검색..."}
-                  value={nameSearchText}
-                  onChange={(e) => setNameSearchText(e.target.value)}
-                  onKeyDown={handleNameSearchKeyDown}
-                  sx={{ width: 250 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: nameSearchText && (
-                      <InputAdornment position="end">
+              {mode === 'search' ? (
+                <>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <TextField
+                      size="small"
+                      placeholder={nameSearchTerms.length ? "" : "시크릿 이름 검색..."}
+                      value={nameSearchText}
+                      onChange={(e) => setNameSearchText(e.target.value)}
+                      onKeyDown={handleNameSearchKeyDown}
+                      sx={{ width: 250 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: nameSearchText && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={() => setNameSearchText('')}
+                              sx={{ p: 0.5 }}
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {nameSearchTerms.length > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
+                          {nameSearchTerms.map((term, index) => (
+                            <Chip
+                              key={index}
+                              label={term}
+                              size="small"
+                              onDelete={() => handleRemoveNameSearchTerm(term)}
+                            />
+                          ))}
+                          <IconButton
+                            size="small"
+                            onClick={() => setNameSearchTerms([])}
+                            sx={{ p: 0.5 }}
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{
+                    display: 'flex',
+                    gap: 2,
+                    alignItems: 'flex-start',
+                    minWidth: 300,
+                    flex: 1,
+                  }}>
+                    <FormControl size="small" sx={{ width: 120 }}>
+                      <InputLabel>검색 유형</InputLabel>
+                      <Select
+                        value={searchType}
+                        label="검색 유형"
+                        onChange={(e) =>
+                          setSearchType(e.target.value as typeof searchType)
+                        }
+                      >
+                        <MenuItem value="key">키</MenuItem>
+                        <MenuItem value="value">값</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      size="small"
+                      placeholder="검색어 입력 후 Enter..."
+                      value={inputValue}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleSearchKeyDown}
+                      sx={{ flex: 1 }}
+                    />
+                  </Box>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField
+                    size="small"
+                    placeholder={nameSearchTerms.length ? "" : "시크릿 이름 검색..."}
+                    value={nameSearchText}
+                    onChange={(e) => setNameSearchText(e.target.value)}
+                    onKeyDown={handleNameSearchKeyDown}
+                    sx={{ width: 250 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: nameSearchText && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setNameSearchText('')}
+                            sx={{ p: 0.5 }}
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {nameSearchTerms.length > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
+                        {nameSearchTerms.map((term, index) => (
+                          <Chip
+                            key={index}
+                            label={term}
+                            size="small"
+                            onDelete={() => handleRemoveNameSearchTerm(term)}
+                          />
+                        ))}
                         <IconButton
                           size="small"
-                          onClick={() => setNameSearchText('')}
+                          onClick={() => setNameSearchTerms([])}
                           sx={{ p: 0.5 }}
                         >
                           <ClearIcon fontSize="small" />
                         </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                {nameSearchTerms.length > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
-                      {nameSearchTerms.map((term, index) => (
-                        <Chip
-                          key={index}
-                          label={term}
-                          size="small"
-                          onDelete={() => handleRemoveNameSearchTerm(term)}
-                        />
-                      ))}
-                      <IconButton
-                        size="small"
-                        onClick={() => setNameSearchTerms([])}
-                        sx={{ p: 0.5 }}
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
+                      </Box>
                     </Box>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-            <Box sx={{
-              display: 'flex',
-              gap: 2,
-              alignItems: 'flex-start',
-              minWidth: 300,
-              flex: 1,
-            }}>
-              <FormControl size="small" sx={{ width: 120 }}>
-                <InputLabel>검색 유형</InputLabel>
-                <Select
-                  value={searchType}
-                  label="검색 유형"
-                  onChange={(e) =>
-                    setSearchType(e.target.value as typeof searchType)
-                  }
-                >
-                  <MenuItem value="key">키</MenuItem>
-                  <MenuItem value="value">값</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                placeholder="검색어 입력 후 Enter..."
-                value={inputValue}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearchKeyDown}
-                sx={{ flex: 1 }}
-              />
+                  )}
+                </Box>
+              )}
             </Box>
           </Box>
         </Toolbar>
@@ -304,210 +377,233 @@ export default function SecretSearchResult({
           height: 'calc(100vh - 200px)',
           overflow: 'auto'
         }}>
-          <Box sx={{
-            display: 'flex',
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1,
-            px: 2,
-            height: 56,
-          }}>
-            <Box sx={{
-              width: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <Checkbox
-                checked={selectedResults.length > 0 && selectedResults.length === searchResults.length}
-                indeterminate={selectedResults.length > 0 && selectedResults.length < searchResults.length}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedResults(searchResults);
-                  } else {
-                    setSelectedResults([]);
-                  }
+          {mode === 'batch-add' ? (
+            <Box sx={{ height: '100%', overflow: 'auto' }}>
+              <SecretList
+                secrets={secrets}
+                onSelect={onSecretSelect}
+                onAdd={() => {}}
+                onBulkSelect={(selectedSecrets) => {
+                  const results = selectedSecrets.map(secret => ({
+                    secretName: secret.Name || '',
+                    key: '',
+                    value: '',
+                    secret,
+                  }));
+                  setSelectedResults(results);
                 }}
+                onDelete={() => {}}
+                searchTerms={nameSearchTerms}
               />
             </Box>
-            <ResizableColumn
-              width={columnWidths.name}
-              onResize={(width) => setColumnWidths(prev => ({ ...prev, name: width }))}
-            >
+          ) : (
+            <>
               <Box sx={{
-                fontWeight: 'bold',
-                height: '100%',
                 display: 'flex',
-                alignItems: 'center',
-                pr: 4,
+                borderBottom: 1,
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                px: 2,
+                height: 56,
               }}>
-                시크릿 이름
-              </Box>
-            </ResizableColumn>
-            <ResizableColumn
-              width={columnWidths.key}
-              onResize={(width) => setColumnWidths(prev => ({ ...prev, key: width }))}
-            >
-              <Box sx={{
-                fontWeight: 'bold',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                pr: 4,
-              }}>
-                키
-              </Box>
-            </ResizableColumn>
-            <ResizableColumn
-              width={columnWidths.value}
-              onResize={(width) => setColumnWidths(prev => ({ ...prev, value: width }))}
-            >
-              <Box sx={{
-                fontWeight: 'bold',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                pr: 4,
-              }}>
-                값
-              </Box>
-            </ResizableColumn>
-          </Box>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            <List
-              height={window.innerHeight - 250}
-              itemCount={searchResults.length}
-              itemSize={56}
-              width="100%"
-              style={{
-                paddingTop: 4,
-                paddingBottom: 4,
-                minWidth: 'fit-content'
-              }}
-            >
-              {({ index, style }) => {
-                const result = searchResults[index];
-                return (
-                  <Box
-                    key={`${result.secretName}-${result.key}-${index}`}
-                    style={{
-                      ...style,
-                      width: 'fit-content',
-                      minWidth: '100%'
+                <Box sx={{
+                  width: 50,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Checkbox
+                    checked={selectedResults.length > 0 && selectedResults.length === searchResults.length}
+                    indeterminate={selectedResults.length > 0 && selectedResults.length < searchResults.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedResults(searchResults);
+                      } else {
+                        setSelectedResults([]);
+                      }
                     }}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderBottom: 1,
-                      borderColor: 'divider',
-                      px: 2,
-                      py: 1,
-                      '&:hover': { bgcolor: 'action.hover' },
-                      bgcolor: 'background.paper',
-                    }}
-                  >
-                    <Box sx={{ width: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Checkbox
-                        checked={selectedResults.some(
-                          (r) =>
-                            r.secretName === result.secretName &&
-                            r.key === result.key &&
-                            r.value === result.value,
-                        )}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedResults([...selectedResults, result]);
-                          } else {
-                            setSelectedResults(
-                              selectedResults.filter(
-                                (r) =>
-                                  r.secretName !== result.secretName ||
-                                  r.key !== result.key ||
-                                  r.value !== result.value,
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                    </Box>
-                    <Box sx={{
-                      width: columnWidths.name,
-                      display: 'flex',
-                      alignItems: 'center',
-                      pr: 4,
-                    }}>
-                      <Link
-                        component="button"
-                        onClick={() => onSecretSelect(result.secret)}
-                        sx={{
-                          textAlign: 'left',
-                          flex: 1,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {result.secretName}
-                      </Link>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleCopy(result.secretName)}
-                        sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
-                      >
-                        <CopyIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{
-                      width: columnWidths.key,
-                      display: 'flex',
-                      alignItems: 'center',
-                      pr: 4,
-                    }}>
-                      <Box sx={{
-                        flex: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>{result.key}</Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleCopy(result.key)}
-                        sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
-                      >
-                        <CopyIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{
-                      width: columnWidths.value,
-                      display: 'flex',
-                      alignItems: 'center',
-                      pr: 4,
-                    }}>
-                      <Box sx={{
-                        flex: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {result.value}
-                      </Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleCopy(result.value)}
-                        sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
-                      >
-                        <CopyIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
+                  />
+                </Box>
+                <ResizableColumn
+                  width={columnWidths.name}
+                  onResize={(width) => setColumnWidths(prev => ({ ...prev, name: width }))}
+                >
+                  <Box sx={{
+                    fontWeight: 'bold',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pr: 4,
+                  }}>
+                    시크릿 이름
                   </Box>
-                );
-              }}
-            </List>
-          </Box>
+                </ResizableColumn>
+                <ResizableColumn
+                  width={columnWidths.key}
+                  onResize={(width) => setColumnWidths(prev => ({ ...prev, key: width }))}
+                >
+                  <Box sx={{
+                    fontWeight: 'bold',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pr: 4,
+                  }}>
+                    키
+                  </Box>
+                </ResizableColumn>
+                <ResizableColumn
+                  width={columnWidths.value}
+                  onResize={(width) => setColumnWidths(prev => ({ ...prev, value: width }))}
+                >
+                  <Box sx={{
+                    fontWeight: 'bold',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pr: 4,
+                  }}>
+                    값
+                  </Box>
+                </ResizableColumn>
+              </Box>
+              <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                <List
+                  height={window.innerHeight - 250}
+                  itemCount={searchResults.length}
+                  itemSize={56}
+                  width="100%"
+                  style={{
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    minWidth: 'fit-content'
+                  }}
+                >
+                  {({ index, style }) => {
+                    const result = searchResults[index];
+                    return (
+                      <Box
+                        key={`${result.secretName}-${result.key}-${index}`}
+                        style={{
+                          ...style,
+                          width: 'fit-content',
+                          minWidth: '100%'
+                        }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          borderBottom: 1,
+                          borderColor: 'divider',
+                          px: 2,
+                          py: 1,
+                          '&:hover': { bgcolor: 'action.hover' },
+                          bgcolor: 'background.paper',
+                        }}
+                      >
+                        <Box sx={{ width: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Checkbox
+                            checked={selectedResults.some(
+                              (r) =>
+                                r.secretName === result.secretName &&
+                                r.key === result.key &&
+                                r.value === result.value,
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedResults([...selectedResults, result]);
+                              } else {
+                                setSelectedResults(
+                                  selectedResults.filter(
+                                    (r) =>
+                                      r.secretName !== result.secretName ||
+                                      r.key !== result.key ||
+                                      r.value !== result.value,
+                                  ),
+                                );
+                              }
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{
+                          width: columnWidths.name,
+                          display: 'flex',
+                          alignItems: 'center',
+                          pr: 4,
+                        }}>
+                          <Link
+                            component="button"
+                            onClick={() => onSecretSelect(result.secret)}
+                            sx={{
+                              textAlign: 'left',
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {result.secretName}
+                          </Link>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(result.secretName)}
+                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                          >
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <Box sx={{
+                          width: columnWidths.key,
+                          display: 'flex',
+                          alignItems: 'center',
+                          pr: 4,
+                        }}>
+                          <Box sx={{
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>{result.key}</Box>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(result.key)}
+                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                          >
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <Box sx={{
+                          width: columnWidths.value,
+                          display: 'flex',
+                          alignItems: 'center',
+                          pr: 4,
+                        }}>
+                          <Box sx={{
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {result.value}
+                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(result.value)}
+                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                          >
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                </List>
+              </Box>
+            </>
+          )}
         </Box>
       </Paper>
 
@@ -515,6 +611,15 @@ export default function SecretSearchResult({
         open={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
         onUpdate={onBatchUpdate}
+        selectedSecrets={Array.from(
+          new Set(selectedResults.map((r) => r.secret)),
+        )}
+      />
+
+      <BatchAddDialog
+        open={isBatchAddOpen}
+        onClose={() => setIsBatchAddOpen(false)}
+        onAdd={onBatchUpdate}
         selectedSecrets={Array.from(
           new Set(selectedResults.map((r) => r.secret)),
         )}

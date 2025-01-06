@@ -130,23 +130,16 @@ export function useSecrets({
         await client.send(command);
         await loadSecrets();
 
-        const response = await client.send(new ListSecretsCommand({}));
-        if (response.SecretList) {
-          const updatedSecretFromList = response.SecretList.find(
-            (s) => s.ARN === updatedSecret.ARN,
-          ) as Secret;
+        const valueCommand = new GetSecretValueCommand({
+          SecretId: updatedSecret.ARN,
+        });
+        const valueResponse = await client.send(valueCommand);
 
-          if (updatedSecretFromList) {
-            setSelectedSecret({
-              ...updatedSecretFromList,
-              SecretString: updatedSecret.SecretString,
-              Tags: updatedSecretFromList.Tags?.map((tag) => ({
-                Key: tag.Key || '',
-                Value: tag.Value || '',
-              })),
-            } as Secret);
-          }
-        }
+        setSelectedSecret({
+          ...updatedSecret,
+          SecretString: valueResponse.SecretString,
+          LastChangedDate: new Date(),
+        });
 
         setIsEditing(false);
         onSuccess('시크릿이 업데이트되었습니다.');

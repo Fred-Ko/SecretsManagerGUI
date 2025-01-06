@@ -18,7 +18,6 @@ interface Props {
   onSelect: (secret: Secret) => void;
   onAdd: () => void;
   onBulkSelect: (secrets: Secret[]) => void;
-  onDelete: () => void;
   searchTerms?: string[];
 }
 
@@ -26,7 +25,6 @@ export default function SecretList({
   secrets,
   onSelect,
   onBulkSelect,
-  onDelete,
   searchTerms = [],
 }: Props) {
   const selectedSecrets = useMemo(() => new Set<string>(), []);
@@ -35,14 +33,9 @@ export default function SecretList({
     if (!searchTerms.length) return secrets;
 
     return secrets.filter((secret) => {
-      const searchTarget = [
-        secret.Name,
-        secret.Description,
-      ].filter(Boolean).join(' ').toLowerCase();
-
-      // 모든 검색어가 포함되어 있어야 함 (AND 조건)
+      const name = (secret.Name || '').toLowerCase();
       return searchTerms.every(term =>
-        searchTarget.includes(term.toLowerCase())
+        name.includes(term.toLowerCase())
       );
     });
   }, [secrets, searchTerms]);
@@ -67,60 +60,74 @@ export default function SecretList({
   }
 
   return (
-    <List dense disablePadding>
-      {filteredSecrets.map((secret) => (
-        <ListItem
-          key={secret.ARN}
-          disablePadding
-          secondaryAction={
-            selectedSecrets.size > 0 && (
-              <IconButton
-                edge="end"
-                size="small"
-                onClick={() =>
-                  handleToggleSelect(secret, !selectedSecrets.has(secret.ARN!))
-                }
-              >
-                <DeleteIcon />
-              </IconButton>
-            )
+    <>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        p: 1,
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
+        <Checkbox
+          edge="start"
+          checked={filteredSecrets.length > 0 && filteredSecrets.every(secret => selectedSecrets.has(secret.ARN!))}
+          indeterminate={
+            filteredSecrets.some(secret => selectedSecrets.has(secret.ARN!)) &&
+            !filteredSecrets.every(secret => selectedSecrets.has(secret.ARN!))
           }
-        >
-          <ListItemButton
-            selected={selectedSecrets.has(secret.ARN!)}
-            onClick={() => onSelect(secret)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              filteredSecrets.forEach(secret => selectedSecrets.add(secret.ARN!));
+            } else {
+              filteredSecrets.forEach(secret => selectedSecrets.delete(secret.ARN!));
+            }
+            onBulkSelect(secrets.filter((s) => s.ARN && selectedSecrets.has(s.ARN)));
+          }}
+        />
+        <Typography variant="body2" sx={{ ml: 1 }}>전체 선택</Typography>
+      </Box>
+      <List dense disablePadding>
+        {filteredSecrets.map((secret) => (
+          <ListItem
+            key={secret.ARN}
+            disablePadding
           >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <Checkbox
-                edge="start"
-                checked={selectedSecrets.has(secret.ARN!)}
-                onChange={(e) => handleToggleSelect(secret, e.target.checked)}
-                onClick={(e) => e.stopPropagation()}
+            <ListItemButton
+              selected={selectedSecrets.has(secret.ARN!)}
+              onClick={() => onSelect(secret)}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <Checkbox
+                  edge="start"
+                  checked={selectedSecrets.has(secret.ARN!)}
+                  onChange={(e) => handleToggleSelect(secret, e.target.checked)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={secret.Name}
+                secondary={secret.Description}
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  sx: {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
+                secondaryTypographyProps={{
+                  variant: 'caption',
+                  sx: {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
               />
-            </ListItemIcon>
-            <ListItemText
-              primary={secret.Name}
-              secondary={secret.Description}
-              primaryTypographyProps={{
-                variant: 'body2',
-                sx: {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-              }}
-              secondaryTypographyProps={{
-                variant: 'caption',
-                sx: {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-              }}
-            />
-          </ListItemButton>
-        </ListItem>
-      ))}
-    </List>
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </>
   );
 }

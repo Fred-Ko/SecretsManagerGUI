@@ -107,7 +107,6 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^5.16.13",
     "@mui/material": "^5.16.13",
-    "@types/react-window": "^1.8.8",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^5.3.0",
@@ -134,6 +133,7 @@
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@types/react-test-renderer": "^18.0.1",
+    "@types/react-window": "^1.8.8",
     "@types/webpack-bundle-analyzer": "^4.6.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
@@ -188,8 +188,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "SecretsManagerGUI",
+    "appId": "com.fredko.secretsmanager",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
@@ -198,8 +198,6 @@
       "package.json"
     ],
     "mac": {
-      "sign": ".erb/scripts/notarize.js",
-      "notarize": false,
       "target": {
         "target": "default",
         "arch": [
@@ -207,10 +205,8 @@
           "x64"
         ]
       },
-      "type": "distribution",
-      "hardenedRuntime": true,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "type": "development",
+      "hardenedRuntime": false,
       "gatekeeperAssess": false
     },
     "dmg": {

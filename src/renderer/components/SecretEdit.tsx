@@ -13,7 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Secret } from '../../main/interfaces/SecretManager';
 
 interface Props {
@@ -54,24 +54,26 @@ export default function SecretEdit({ secret, onSave, onClose }: Props) {
       return '';
     }
   });
+  const formRef = useRef<HTMLDivElement>(null);
 
-  const handleAddKeyValue = () => {
-    setKeyValuePairs([...keyValuePairs, { key: '', value: '' }]);
-  };
+  const handleAddKeyValue = useCallback(() => {
+    setKeyValuePairs(prev => [...prev, { key: '', value: '' }]);
+  }, []);
 
-  const handleRemoveKeyValue = (index: number) => {
-    setKeyValuePairs(keyValuePairs.filter((_, i) => i !== index));
-  };
+  const handleRemoveKeyValue = useCallback((index: number) => {
+    setKeyValuePairs(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const handleKeyValueChange = (
-    index: number,
-    field: keyof KeyValuePair,
-    value: string,
-  ) => {
-    const newKeyValuePairs = [...keyValuePairs];
-    newKeyValuePairs[index] = { ...newKeyValuePairs[index], [field]: value };
-    setKeyValuePairs(newKeyValuePairs);
-  };
+  const handleKeyValueChange = useCallback(
+    (index: number, field: keyof KeyValuePair, value: string) => {
+      setKeyValuePairs(prev =>
+        prev.map((item, i) =>
+          i === index ? { ...item, [field]: value } : item
+        )
+      );
+    },
+    []
+  );
 
   const parseEnvFormat = (input: string): KeyValuePair[] => {
     return input
@@ -199,70 +201,60 @@ export default function SecretEdit({ secret, onSave, onClose }: Props) {
   };
 
   const renderForm = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {keyValuePairs.map((kv) => {
-        const key = `${kv.key || 'new'}-${Math.random().toString(36).slice(2)}`;
-        return (
-          <Paper
-            key={key}
-            variant="outlined"
-            sx={{ p: 2, position: 'relative' }}
-          >
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="키"
-                value={kv.key}
-                onChange={(e) =>
-                  handleKeyValueChange(
-                    keyValuePairs.findIndex((item) => item === kv),
-                    'key',
-                    e.target.value,
-                  )
-                }
-                size="small"
-                fullWidth
-              />
-              <TextField
-                label="값"
-                value={kv.value}
-                onChange={(e) =>
-                  handleKeyValueChange(
-                    keyValuePairs.findIndex((item) => item === kv),
-                    'value',
-                    e.target.value,
-                  )
-                }
-                size="small"
-                fullWidth
-              />
-            </Box>
-            {keyValuePairs.length > 1 && (
-              <IconButton
-                size="small"
-                onClick={() =>
-                  handleRemoveKeyValue(
-                    keyValuePairs.findIndex((item) => item === kv),
-                  )
-                }
-                sx={{
-                  position: 'absolute',
-                  top: -10,
-                  right: -10,
-                  bgcolor: 'background.paper',
-                  border: 1,
-                  borderColor: 'divider',
-                  '&:hover': {
-                    bgcolor: 'error.main',
-                    color: 'error.contrastText',
-                  },
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Paper>
-        );
-      })}
+    <Box
+      ref={formRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        maxHeight: '60vh',
+        overflowY: 'auto'
+      }}
+    >
+      {keyValuePairs.map((kv, index) => (
+        <Paper
+          key={index}
+          variant="outlined"
+          sx={{ p: 2, position: 'relative' }}
+        >
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              label="키"
+              value={kv.key}
+              onChange={(e) => handleKeyValueChange(index, 'key', e.target.value)}
+              size="small"
+              fullWidth
+            />
+            <TextField
+              label="값"
+              value={kv.value}
+              onChange={(e) => handleKeyValueChange(index, 'value', e.target.value)}
+              size="small"
+              fullWidth
+            />
+          </Box>
+          {keyValuePairs.length > 1 && (
+            <IconButton
+              size="small"
+              onClick={() => handleRemoveKeyValue(index)}
+              sx={{
+                position: 'absolute',
+                top: -10,
+                right: -10,
+                bgcolor: 'background.paper',
+                border: 1,
+                borderColor: 'divider',
+                '&:hover': {
+                  bgcolor: 'error.main',
+                  color: 'error.contrastText',
+                },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Paper>
+      ))}
       <Button
         startIcon={<AddIcon />}
         onClick={handleAddKeyValue}

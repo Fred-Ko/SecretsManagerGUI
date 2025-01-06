@@ -138,9 +138,10 @@ export default function App() {
 
   const handleSaveAwsCredentials = async (credentials: AwsCredentials) => {
     try {
-      await saveAwsCredentials(credentials);
-      showAlert('AWS 자격 증명이 저장되었습니다.', 'success');
-      loadSecrets();
+      await saveAwsCredentials(credentials, () => {
+        showAlert('AWS 자격 증명이 저장되었습니다.', 'success');
+        loadSecrets();
+      });
     } catch (error) {
       showAlert('AWS 자격 증명 저장에 실패했습니다.', 'error');
     }
@@ -324,6 +325,7 @@ export default function App() {
                 >
                   <Tab label="상세 정보" />
                   <Tab label="검색" />
+                  <Tab label="일괄 추가" />
                 </Tabs>
               </Box>
 
@@ -348,6 +350,18 @@ export default function App() {
                     secrets={secrets}
                     onSecretSelect={handleSecretSelect}
                     onBatchUpdate={batchUpdateSecrets}
+                    mode="search"
+                  />
+                </Box>
+              )}
+
+              {currentTab === 2 && (
+                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                  <SecretSearchResult
+                    secrets={secrets}
+                    onSecretSelect={handleSecretSelect}
+                    onBatchUpdate={batchUpdateSecrets}
+                    mode="batch-add"
                   />
                 </Box>
               )}
