@@ -1,33 +1,31 @@
 import {
   Add as AddIcon,
-  Refresh as RefreshIcon,
-  Settings as SettingsIcon,
-  Search as SearchIcon,
   Clear as ClearIcon,
+  Refresh as RefreshIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import {
   Alert,
   AppBar,
   Box,
+  Chip,
   CssBaseline,
-  Divider,
-  Drawer,
   IconButton,
+  Menu,
+  MenuItem,
   Snackbar,
   Tab,
   Tabs,
+  TextField,
   ThemeProvider,
   Toolbar,
   Typography,
   createTheme,
   useMediaQuery,
-  TextField,
-  InputAdornment,
-  Chip,
-  Menu,
-  MenuItem,
 } from '@mui/material';
-import { useState, useCallback, useEffect } from 'react';
+import { SnackbarProvider } from 'notistack';
+import { useCallback, useEffect, useState } from 'react';
 import { Secret } from '../main/interfaces/SecretManager';
 import AwsCredentialsDialog from './components/AwsCredentialsDialog';
 import BatchUpdateDialog from './components/BatchUpdateDialog';
@@ -39,10 +37,9 @@ import SecretList from './components/SecretList';
 import SecretSearchResult from './components/SecretSearchResult';
 import { useAlert } from './hooks/useAlert';
 import { useAwsCredentials } from './hooks/useAwsCredentials';
+import { useNavigationStack } from './hooks/useNavigationStack';
 import { useSecrets } from './hooks/useSecrets';
 import { AwsCredentials } from './utils/aws';
-import { SnackbarProvider } from 'notistack';
-import { useNavigationStack } from './hooks/useNavigationStack';
 
 const DRAWER_WIDTH = 300;
 
@@ -95,7 +92,9 @@ export default function App() {
   const [currentSearchText, setCurrentSearchText] = useState('');
   const [drawerWidth, setDrawerWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(null);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(
+    null,
+  );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navigation = useNavigationStack();
@@ -345,9 +344,13 @@ export default function App() {
                     bottom: -8,
                     width: 20,
                     height: 20,
-                    bgcolor: autoRefreshInterval ? 'primary.main' : 'transparent',
+                    bgcolor: autoRefreshInterval
+                      ? 'primary.main'
+                      : 'transparent',
                     '&:hover': {
-                      bgcolor: autoRefreshInterval ? 'primary.dark' : 'action.hover',
+                      bgcolor: autoRefreshInterval
+                        ? 'primary.dark'
+                        : 'action.hover',
                     },
                   }}
                 >
@@ -572,12 +575,20 @@ export default function App() {
                 >
                   <Tab label="상세 정보" />
                   <Tab label="검색" />
+                  <Tab label="일괄 업데이트" />
                   <Tab label="일괄 추가" />
                 </Tabs>
               </Box>
 
               {currentTab === 0 && (
-                <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1 }}>
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    overflow: 'auto',
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                  }}
+                >
                   {selectedSecret && !isEditing && (
                     <SecretDetail
                       secret={selectedSecret}
@@ -606,6 +617,17 @@ export default function App() {
               )}
 
               {currentTab === 2 && (
+                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                  <SecretSearchResult
+                    secrets={secrets}
+                    onSecretSelect={handleSecretSelect}
+                    onBatchUpdate={batchUpdateSecrets}
+                    mode="batch-update"
+                  />
+                </Box>
+              )}
+
+              {currentTab === 3 && (
                 <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                   <SecretSearchResult
                     secrets={secrets}

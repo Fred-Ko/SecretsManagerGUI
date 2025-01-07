@@ -1,39 +1,47 @@
-import React from 'react';
-import { AutoFixHigh as UpdateIcon, ContentCopy as CopyIcon, Search as SearchIcon, Clear as ClearIcon, Add as AddIcon } from '@mui/icons-material';
 import {
+  Add as AddIcon,
+  Clear as ClearIcon,
+  ContentCopy as CopyIcon,
+  Search as SearchIcon,
+  AutoFixHigh as UpdateIcon,
+} from '@mui/icons-material';
+import {
+  Box,
   Button,
   Checkbox,
+  Chip,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   Link,
   MenuItem,
   Paper,
   Select,
-  TextField,
-  Toolbar,
-  Typography,
-  Box,
-  IconButton,
-  InputAdornment,
-  Chip,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  Toolbar,
+  Typography,
   tableCellClasses,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { Secret } from '../../main/interfaces/SecretManager';
-import BatchUpdateDialog from './BatchUpdateDialog';
-import BatchAddDialog from './BatchAddDialog';
-import { FixedSizeList as List } from 'react-window';
 import { useSnackbar } from 'notistack';
-import ResizableColumn from './ResizableColumn';
-import SecretList from './SecretList';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { TableVirtuoso } from 'react-virtuoso';
+import { Secret } from '../../main/interfaces/SecretManager';
+import BatchAddDialog from './BatchAddDialog';
+import BatchUpdateDialog from './BatchUpdateDialog';
 
 interface Props {
   secrets: Secret[];
@@ -90,7 +98,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
       '&.isResizing': {
         backgroundColor: theme.palette.primary.main,
         opacity: 0.5,
-      }
+      },
     },
   },
   [`&.${tableCellClasses.body}`]: {
@@ -137,7 +145,9 @@ export default function SecretSearchResult({
   mode = 'search',
 }: Props) {
   const [searchType, setSearchType] = useState<'key' | 'value'>('key');
-  const [currentSearchType, setCurrentSearchType] = useState<'key' | 'value'>('key');
+  const [currentSearchType, setCurrentSearchType] = useState<'key' | 'value'>(
+    'key',
+  );
   const [searchText, setSearchText] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
@@ -155,7 +165,8 @@ export default function SecretSearchResult({
   useEffect(() => {
     const handleResize = () => {
       const totalWidth = window.innerWidth - 400; // 여백과 체크박스 영역 고려
-      if (totalWidth > 900) { // 최소 너비보다 클 때만 자동 조절
+      if (totalWidth > 900) {
+        // 최소 너비보다 클 때만 자동 조절
         setColumnWidths({
           name: totalWidth * 0.25,
           key: totalWidth * 0.25,
@@ -173,36 +184,54 @@ export default function SecretSearchResult({
   const [nameSearchTerms, setNameSearchTerms] = useState<string[]>([]);
 
   // 시크릿 이름 검색 핸들러
-  const handleNameSearchKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && nameSearchText.trim()) {
-      event.preventDefault();
-      setNameSearchTerms([...nameSearchTerms, nameSearchText.trim()]);
-      setNameSearchText('');
-    } else if (event.key === 'Backspace' && !nameSearchText && nameSearchTerms.length > 0) {
-      event.preventDefault();
-      setNameSearchTerms(nameSearchTerms.slice(0, -1));
-    }
-  }, [nameSearchText, nameSearchTerms]);
+  const handleNameSearchKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter' && nameSearchText.trim()) {
+        event.preventDefault();
+        setNameSearchTerms([...nameSearchTerms, nameSearchText.trim()]);
+        setNameSearchText('');
+      } else if (
+        event.key === 'Backspace' &&
+        !nameSearchText &&
+        nameSearchTerms.length > 0
+      ) {
+        event.preventDefault();
+        setNameSearchTerms(nameSearchTerms.slice(0, -1));
+      }
+    },
+    [nameSearchText, nameSearchTerms],
+  );
 
-  const handleRemoveNameSearchTerm = useCallback((termToRemove: string) => {
-    setNameSearchTerms(nameSearchTerms.filter(term => term !== termToRemove));
-  }, [nameSearchTerms]);
+  const handleRemoveNameSearchTerm = useCallback(
+    (termToRemove: string) => {
+      setNameSearchTerms(
+        nameSearchTerms.filter((term) => term !== termToRemove),
+      );
+    },
+    [nameSearchTerms],
+  );
 
-  const handleSearchKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      setSearchText(inputValue.trim());
-      setCurrentSearchType(searchType);
-    }
-  }, [inputValue, searchType]);
+  const handleSearchKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        setSearchText(inputValue.trim());
+        setCurrentSearchType(searchType);
+      }
+    },
+    [inputValue, searchType],
+  );
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-  }, []);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value);
+    },
+    [],
+  );
 
   // 시크릿 데이터를 미리 파싱
   const parsedSecrets = useMemo(() => {
-    return secrets.map(secret => {
+    return secrets.map((secret) => {
       try {
         if (!secret.SecretString) return { secret, entries: [] };
         const value = JSON.parse(secret.SecretString);
@@ -211,8 +240,8 @@ export default function SecretSearchResult({
             secret,
             entries: Object.entries(value).map(([key, val]) => ({
               key,
-              value: String(val)
-            }))
+              value: String(val),
+            })),
           };
         }
         return { secret, entries: [] };
@@ -231,9 +260,10 @@ export default function SecretSearchResult({
     parsedSecrets.forEach(({ secret, entries }) => {
       // 시크릿 이름으로 필터링
       const name = (secret.Name || '').toLowerCase();
-      if (nameSearchTerms.length > 0 && !nameSearchTerms.every(term =>
-        name.includes(term.toLowerCase())
-      )) {
+      if (
+        nameSearchTerms.length > 0 &&
+        !nameSearchTerms.every((term) => name.includes(term.toLowerCase()))
+      ) {
         return;
       }
       // 현재 입력 중인 검색어로도 필터링
@@ -243,10 +273,13 @@ export default function SecretSearchResult({
 
       // 키/값 검색어로 필터링
       entries.forEach(({ key, value }) => {
-        if (!searchText || (
-          (currentSearchType === 'key' && key.toLowerCase().includes(searchText.toLowerCase())) ||
-          (currentSearchType === 'value' && value.toLowerCase().includes(searchText.toLowerCase()))
-        )) {
+        if (
+          !searchText ||
+          (currentSearchType === 'key' &&
+            key.toLowerCase().includes(searchText.toLowerCase())) ||
+          (currentSearchType === 'value' &&
+            value.toLowerCase().includes(searchText.toLowerCase()))
+        ) {
           results.push({
             secretName: secret.Name || '',
             key,
@@ -260,11 +293,14 @@ export default function SecretSearchResult({
     return results;
   }, [parsedSecrets, nameSearchText, searchText, currentSearchType]);
 
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      enqueueSnackbar('복사되었습니다', { variant: 'success' });
-    });
-  }, [enqueueSnackbar]);
+  const handleCopy = useCallback(
+    (text: string) => {
+      navigator.clipboard.writeText(text).then(() => {
+        enqueueSnackbar('복사되었습니다', { variant: 'success' });
+      });
+    },
+    [enqueueSnackbar],
+  );
 
   const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
 
@@ -275,40 +311,50 @@ export default function SecretSearchResult({
   const currentWidth = useRef(0);
   const resizerRef = useRef<HTMLDivElement>(null);
 
-  const handleResizeStart = useCallback((e: React.MouseEvent, column: 'name' | 'key' | 'value') => {
-    setIsResizing(true);
-    setCurrentResizer(column);
-    startResizePos.current = e.clientX;
-    startWidth.current = columnWidths[column];
-    currentWidth.current = columnWidths[column];
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, column: 'name' | 'key' | 'value') => {
+      setIsResizing(true);
+      setCurrentResizer(column);
+      startResizePos.current = e.clientX;
+      startWidth.current = columnWidths[column];
+      currentWidth.current = columnWidths[column];
 
-    // 리사이징 중에는 임시 스타일을 적용
-    if (resizerRef.current) {
-      resizerRef.current.style.position = 'fixed';
-      resizerRef.current.style.height = '100vh';
-      resizerRef.current.style.top = '0';
-      resizerRef.current.style.zIndex = '1300';
-      resizerRef.current.style.opacity = '0.5';
-      resizerRef.current.style.backgroundColor = 'primary.main';
-    }
-  }, [columnWidths]);
+      // 리사이징 중에는 임시 스타일을 적용
+      if (resizerRef.current) {
+        resizerRef.current.style.position = 'fixed';
+        resizerRef.current.style.height = '100vh';
+        resizerRef.current.style.top = '0';
+        resizerRef.current.style.zIndex = '1300';
+        resizerRef.current.style.opacity = '0.5';
+        resizerRef.current.style.backgroundColor = 'primary.main';
+      }
+    },
+    [columnWidths],
+  );
 
-  const handleResizeMove = useCallback((e: MouseEvent) => {
-    if (!isResizing || !currentResizer || !resizerRef.current) return;
+  const handleResizeMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing || !currentResizer || !resizerRef.current) return;
 
-    const diff = e.clientX - startResizePos.current;
-    currentWidth.current = Math.max(100, startWidth.current + diff);
+      const diff = e.clientX - startResizePos.current;
+      currentWidth.current = Math.max(100, startWidth.current + diff);
 
-    // 실시간으로는 리사이저의 위치만 업데이트
-    resizerRef.current.style.left = `${e.clientX}px`;
-  }, [isResizing, currentResizer]);
+      // 실시간으로는 리사이저의 위치만 업데이트
+      resizerRef.current.style.left = `${e.clientX}px`;
+    },
+    [isResizing, currentResizer],
+  );
 
   const handleResizeEnd = useCallback(() => {
     if (currentResizer && currentWidth.current !== startWidth.current) {
       // 드래그가 끝난 시점에만 실제 컬럼 너비 업데이트
-      setColumnWidths(prev => {
+      setColumnWidths((prev) => {
         const newWidths = { ...prev };
-        if (currentResizer === 'name' || currentResizer === 'key' || currentResizer === 'value') {
+        if (
+          currentResizer === 'name' ||
+          currentResizer === 'key' ||
+          currentResizer === 'value'
+        ) {
           newWidths[currentResizer] = currentWidth.current;
         }
         return newWidths;
@@ -331,12 +377,16 @@ export default function SecretSearchResult({
   // 마지막 컬럼(value)은 남은 공간을 모두 차지하도록 설정
   const valueColumnWidth = useMemo(() => {
     const totalWidth = window.innerWidth - 400; // 전체 너비에서 여백과 체크박스 영역 제외
-    return Math.max(400, totalWidth - columnWidths.name - columnWidths.key - 50); // 50은 체크박스 컬럼 너비
+    return Math.max(
+      400,
+      totalWidth - columnWidths.name - columnWidths.key - 50,
+    ); // 50은 체크박스 컬럼 너비
   }, [columnWidths.name, columnWidths.key]);
 
   useEffect(() => {
-    if (!isResizing) {  // 리사이징 중에는 value 컬럼 너비를 자동 조정하지 않음
-      setColumnWidths(prev => ({
+    if (!isResizing) {
+      // 리사이징 중에는 value 컬럼 너비를 자동 조정하지 않음
+      setColumnWidths((prev) => ({
         ...prev,
         value: valueColumnWidth,
       }));
@@ -358,13 +408,26 @@ export default function SecretSearchResult({
     <>
       <Paper>
         <Toolbar sx={{ gap: 2, flexWrap: 'wrap', minHeight: 'auto', py: 1 }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
             <Typography variant="h6" component="div">
-              {mode === 'batch-add' ? '일괄 추가' : '시크릿 검색'}
+              {
+                {
+                  'batch-add': '일괄 추가',
+                  'batch-update': '일괄 업데이트',
+                  search: '시크릿 검색',
+                }[mode || 'search']
+              }
             </Typography>
             {selectedResults.length > 0 && (
               <>
-                {mode === 'search' && (
+                {mode === 'batch-update' && (
                   <Button
                     startIcon={<UpdateIcon />}
                     variant="contained"
@@ -388,25 +451,31 @@ export default function SecretSearchResult({
             )}
           </Box>
 
-          <Box sx={{
-            display: 'flex',
-            gap: 1,
-            alignItems: 'center',
-            width: '100%',
-            flexWrap: 'nowrap'
-          }}>
-            <Box sx={{
+          <Box
+            sx={{
               display: 'flex',
               gap: 1,
               alignItems: 'center',
-              flex: 1,
-              minWidth: 200,
-            }}>
+              width: '100%',
+              flexWrap: 'nowrap',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1,
+                alignItems: 'center',
+                flex: 1,
+                minWidth: 200,
+              }}
+            >
               {mode === 'search' ? (
                 <>
                   <TextField
                     size="small"
-                    placeholder={nameSearchTerms.length ? "" : "시크릿 이름 검색..."}
+                    placeholder={
+                      nameSearchTerms.length ? '' : '시크릿 이름 검색...'
+                    }
                     value={nameSearchText}
                     onChange={(e) => setNameSearchText(e.target.value)}
                     onKeyDown={handleNameSearchKeyDown}
@@ -430,28 +499,7 @@ export default function SecretSearchResult({
                       ),
                     }}
                   />
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, maxWidth: 200, overflow: 'hidden' }}>
-                    {nameSearchTerms.length > 0 && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
-                        {nameSearchTerms.map((term, index) => (
-                          <Chip
-                            key={index}
-                            label={term}
-                            size="small"
-                            onDelete={() => handleRemoveNameSearchTerm(term)}
-                          />
-                        ))}
-                        <IconButton
-                          size="small"
-                          onClick={() => setNameSearchTerms([])}
-                          sx={{ p: 0.5 }}
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </Box>
-                  <FormControl size="small" sx={{ width: 120 }}>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
                     <InputLabel>검색 유형</InputLabel>
                     <Select
                       value={searchType}
@@ -477,7 +525,9 @@ export default function SecretSearchResult({
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <TextField
                     size="small"
-                    placeholder={nameSearchTerms.length ? "" : "시크릿 이름 검색..."}
+                    placeholder={
+                      nameSearchTerms.length ? '' : '시크릿 이름 검색...'
+                    }
                     value={nameSearchText}
                     onChange={(e) => setNameSearchText(e.target.value)}
                     onKeyDown={handleNameSearchKeyDown}
@@ -501,79 +551,222 @@ export default function SecretSearchResult({
                       ),
                     }}
                   />
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, maxWidth: 200, overflow: 'hidden' }}>
-                    {nameSearchTerms.length > 0 && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
-                        {nameSearchTerms.map((term, index) => (
-                          <Chip
-                            key={index}
-                            label={term}
-                            size="small"
-                            onDelete={() => handleRemoveNameSearchTerm(term)}
-                          />
-                        ))}
-                        <IconButton
-                          size="small"
-                          onClick={() => setNameSearchTerms([])}
-                          sx={{ p: 0.5 }}
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </Box>
                 </Box>
               )}
             </Box>
           </Box>
-        </Toolbar>
-        <Box sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: 'calc(100vh - 200px)',
-          overflow: 'auto'
-        }}>
-          {mode === 'batch-add' ? (
-            <Box sx={{ height: '100%', overflow: 'auto' }}>
-              <SecretList
-                secrets={secrets}
-                onSelect={onSecretSelect}
-                onAdd={() => {}}
-                onBulkSelect={(selectedSecrets) => {
-                  const results = selectedSecrets.map(secret => ({
-                    secretName: secret.Name || '',
-                    key: '',
-                    value: '',
-                    secret,
-                  }));
-                  setSelectedResults(results);
+          {nameSearchTerms.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                minWidth: 0,
+                overflow: 'hidden',
+                width: '100%',
+                mt: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  overflow: 'hidden',
                 }}
-                searchTerms={nameSearchTerms}
-              />
+              >
+                {nameSearchTerms.map((term) => (
+                  <Chip
+                    key={term}
+                    label={term}
+                    size="small"
+                    onDelete={() => handleRemoveNameSearchTerm(term)}
+                  />
+                ))}
+                <IconButton
+                  size="small"
+                  onClick={() => setNameSearchTerms([])}
+                  sx={{ p: 0.5 }}
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
-          ) : (
-            <TableContainer component={Paper} sx={{ height: '100%', overflow: 'auto' }}>
+          )}
+        </Toolbar>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: 'calc(100vh - 200px)',
+            overflow: 'auto',
+          }}
+        >
+          {mode === 'batch-add' ? (
+            <TableContainer
+              component={Paper}
+              sx={{ height: '100%', overflow: 'auto' }}
+            >
               <TableVirtuoso
                 style={{ height: '100%' }}
-                data={searchResults}
+                data={secrets}
                 components={{
                   Table: (props: any) => (
-                    <Table {...props} stickyHeader size="small" style={{ tableLayout: 'fixed' }} />
+                    <Table
+                      {...props}
+                      stickyHeader
+                      size="small"
+                      style={{ tableLayout: 'fixed' }}
+                    />
                   ),
-                  TableHead: (props: any) => (
-                    <TableHead {...props} />
-                  ),
+                  TableHead: (props: any) => <TableHead {...props} />,
                   TableRow: StyledTableRow,
-                  TableBody: React.forwardRef<HTMLTableSectionElement>((props, ref) => (
-                    <TableBody {...props} ref={ref} />
-                  )),
+                  TableBody: React.forwardRef<HTMLTableSectionElement>(
+                    (props, ref) => <TableBody {...props} ref={ref} />,
+                  ),
                 }}
                 fixedHeaderContent={() => (
                   <TableRow>
                     <StyledCheckboxCell>
                       <Checkbox
-                        checked={selectedResults.length > 0 && selectedResults.length === searchResults.length}
-                        indeterminate={selectedResults.length > 0 && selectedResults.length < searchResults.length}
+                        checked={
+                          selectedResults.length > 0 &&
+                          selectedResults.length === secrets.length
+                        }
+                        indeterminate={
+                          selectedResults.length > 0 &&
+                          selectedResults.length < secrets.length
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const results = secrets.map((secret) => ({
+                              secretName: secret.Name || '',
+                              key: '',
+                              value: '',
+                              secret,
+                            }));
+                            setSelectedResults(results);
+                          } else {
+                            setSelectedResults([]);
+                          }
+                        }}
+                      />
+                    </StyledCheckboxCell>
+                    <StyledTableCell>시크릿 이름</StyledTableCell>
+                    <StyledTableCell>설명</StyledTableCell>
+                    <StyledTableCell>마지막 수정일</StyledTableCell>
+                  </TableRow>
+                )}
+                itemContent={(index: number, secret: Secret) => (
+                  <>
+                    <StyledCheckboxCell>
+                      <Checkbox
+                        checked={selectedResults.some(
+                          (r) => r.secret.ARN === secret.ARN,
+                        )}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedResults([
+                              ...selectedResults,
+                              {
+                                secretName: secret.Name || '',
+                                key: '',
+                                value: '',
+                                secret,
+                              },
+                            ]);
+                          } else {
+                            setSelectedResults(
+                              selectedResults.filter(
+                                (r) => r.secret.ARN !== secret.ARN,
+                              ),
+                            );
+                          }
+                        }}
+                      />
+                    </StyledCheckboxCell>
+                    <StyledTableCell>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() => handleCopy(secret.Name || '')}
+                          title="이름 복사"
+                        >
+                          <CopyIcon fontSize="small" />
+                        </IconButton>
+                        <Link
+                          component="button"
+                          onClick={() => onSecretSelect(secret)}
+                          sx={{
+                            textAlign: 'left',
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {secret.Name}
+                        </Link>
+                      </Box>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Typography
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {secret.Description}
+                      </Typography>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Typography>
+                        {secret.LastChangedDate?.toLocaleString()}
+                      </Typography>
+                    </StyledTableCell>
+                  </>
+                )}
+              />
+            </TableContainer>
+          ) : (
+            <TableContainer
+              component={Paper}
+              sx={{ height: '100%', overflow: 'auto' }}
+            >
+              <TableVirtuoso
+                style={{ height: '100%' }}
+                data={searchResults}
+                components={{
+                  Table: (props: any) => (
+                    <Table
+                      {...props}
+                      stickyHeader
+                      size="small"
+                      style={{ tableLayout: 'fixed' }}
+                    />
+                  ),
+                  TableHead: (props: any) => <TableHead {...props} />,
+                  TableRow: StyledTableRow,
+                  TableBody: React.forwardRef<HTMLTableSectionElement>(
+                    (props, ref) => <TableBody {...props} ref={ref} />,
+                  ),
+                }}
+                fixedHeaderContent={() => (
+                  <TableRow>
+                    <StyledCheckboxCell>
+                      <Checkbox
+                        checked={
+                          selectedResults.length > 0 &&
+                          selectedResults.length === searchResults.length
+                        }
+                        indeterminate={
+                          selectedResults.length > 0 &&
+                          selectedResults.length < searchResults.length
+                        }
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedResults(searchResults);
@@ -583,7 +776,13 @@ export default function SecretSearchResult({
                         }}
                       />
                     </StyledCheckboxCell>
-                    <StyledTableCell sx={{ width: columnWidths.name, minWidth: columnWidths.name, maxWidth: columnWidths.name }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.name,
+                        minWidth: columnWidths.name,
+                        maxWidth: columnWidths.name,
+                      }}
+                    >
                       시크릿 이름
                       <div
                         ref={currentResizer === 'name' ? resizerRef : null}
@@ -591,7 +790,13 @@ export default function SecretSearchResult({
                         onMouseDown={(e) => handleResizeStart(e, 'name')}
                       />
                     </StyledTableCell>
-                    <StyledTableCell sx={{ width: columnWidths.key, minWidth: columnWidths.key, maxWidth: columnWidths.key }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.key,
+                        minWidth: columnWidths.key,
+                        maxWidth: columnWidths.key,
+                      }}
+                    >
                       키
                       <div
                         ref={currentResizer === 'key' ? resizerRef : null}
@@ -599,7 +804,12 @@ export default function SecretSearchResult({
                         onMouseDown={(e) => handleResizeStart(e, 'key')}
                       />
                     </StyledTableCell>
-                    <StyledTableCell sx={{ width: columnWidths.value, minWidth: columnWidths.value }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.value,
+                        minWidth: columnWidths.value,
+                      }}
+                    >
                       값
                       <div
                         ref={currentResizer === 'value' ? resizerRef : null}
@@ -635,8 +845,16 @@ export default function SecretSearchResult({
                         }}
                       />
                     </StyledCheckboxCell>
-                    <StyledTableCell sx={{ width: columnWidths.name, minWidth: columnWidths.name, maxWidth: columnWidths.name }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.name,
+                        minWidth: columnWidths.name,
+                        maxWidth: columnWidths.name,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
                         <IconButton
                           size="small"
                           onClick={() => handleCopy(result.secretName)}
@@ -659,8 +877,16 @@ export default function SecretSearchResult({
                         </Link>
                       </Box>
                     </StyledTableCell>
-                    <StyledTableCell sx={{ width: columnWidths.key, minWidth: columnWidths.key, maxWidth: columnWidths.key }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.key,
+                        minWidth: columnWidths.key,
+                        maxWidth: columnWidths.key,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
                         <IconButton
                           size="small"
                           onClick={() => handleCopy(result.key)}
@@ -680,8 +906,15 @@ export default function SecretSearchResult({
                         </Typography>
                       </Box>
                     </StyledTableCell>
-                    <StyledTableCell sx={{ width: columnWidths.value, minWidth: columnWidths.value }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.value,
+                        minWidth: columnWidths.value,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
                         <IconButton
                           size="small"
                           onClick={() => handleCopy(result.value)}
@@ -713,7 +946,11 @@ export default function SecretSearchResult({
       <BatchUpdateDialog
         open={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
-        onUpdate={onBatchUpdate}
+        onUpdate={async (updates) => {
+          await onBatchUpdate(updates);
+          setSelectedResults([]);
+          setIsBatchUpdateOpen(false);
+        }}
         selectedSecrets={Array.from(
           new Set(selectedResults.map((r) => r.secret)),
         )}
@@ -722,7 +959,11 @@ export default function SecretSearchResult({
       <BatchAddDialog
         open={isBatchAddOpen}
         onClose={() => setIsBatchAddOpen(false)}
-        onAdd={onBatchUpdate}
+        onAdd={async (updates) => {
+          await onBatchUpdate(updates);
+          setSelectedResults([]);
+          setIsBatchAddOpen(false);
+        }}
         selectedSecrets={Array.from(
           new Set(selectedResults.map((r) => r.secret)),
         )}

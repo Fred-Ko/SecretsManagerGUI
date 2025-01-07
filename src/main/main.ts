@@ -1,12 +1,12 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import log from 'electron-log';
+import { autoUpdater } from 'electron-updater';
+import { existsSync, readFileSync } from 'fs';
 import { parse } from 'ini';
 import { homedir } from 'os';
 import path from 'path';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
-import { resolveHtmlPath } from './util';
 import MenuBuilder from './menu';
+import { resolveHtmlPath } from './util';
 
 // 앱 설정 파일 경로
 
