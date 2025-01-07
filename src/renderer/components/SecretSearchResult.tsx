@@ -470,7 +470,7 @@ export default function SecretSearchResult({
                     value={inputValue}
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchKeyDown}
-                    sx={{ flex: 1, maxWidth: 300 }}
+                    sx={{ flex: 1, maxWidth: 1200 }}
                   />
                 </>
               ) : (
