@@ -6,27 +6,17 @@ interface UseAwsCredentialsReturn {
   isAwsSettingsOpen: boolean;
   openAwsSettings: () => void;
   closeAwsSettings: () => void;
-  saveAwsCredentials: (credentials: AwsCredentials, onSaved?: () => void) => Promise<void>;
+  setCredentials: (credentials: AwsCredentials) => void;
 }
 
 export function useAwsCredentials(): UseAwsCredentialsReturn {
   const [awsCredentials, setAwsCredentials] = useState<AwsCredentials | null>(null);
   const [isAwsSettingsOpen, setIsAwsSettingsOpen] = useState(false);
 
-  const saveAwsCredentials = useCallback(
-    async (credentials: AwsCredentials, onSaved?: () => void) => {
-      try {
-        setAwsCredentials(credentials);
-        setIsAwsSettingsOpen(false);
-        if (onSaved) onSaved();
-        return Promise.resolve();
-      } catch (error) {
-        console.error('Failed to save credentials:', error);
-        return Promise.reject(error);
-      }
-    },
-    [],
-  );
+  const setCredentials = useCallback((credentials: AwsCredentials) => {
+    setAwsCredentials(credentials);
+    setIsAwsSettingsOpen(false);
+  }, []);
 
   const openAwsSettings = useCallback(() => {
     setIsAwsSettingsOpen(true);
@@ -41,6 +31,6 @@ export function useAwsCredentials(): UseAwsCredentialsReturn {
     isAwsSettingsOpen,
     openAwsSettings,
     closeAwsSettings,
-    saveAwsCredentials,
+    setCredentials,
   };
 }

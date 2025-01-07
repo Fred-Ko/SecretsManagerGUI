@@ -40,23 +40,173 @@ import { useAwsCredentials } from './hooks/useAwsCredentials';
 import { useSecrets } from './hooks/useSecrets';
 import { AwsCredentials } from './utils/aws';
 import { SnackbarProvider } from 'notistack';
+import { useNavigationStack } from './hooks/useNavigationStack';
 
 const DRAWER_WIDTH = 300;
 
 export default function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const { alertMessage, alertSeverity, isAlertOpen, showAlert, hideAlert } =
+    useAlert();
+
+  const {
+    awsCredentials,
+    isAwsSettingsOpen,
+    openAwsSettings,
+    closeAwsSettings,
+    setCredentials,
+  } = useAwsCredentials();
+
+  const {
+    secrets,
+    selectedSecret,
+    selectedSecrets,
+    isLoading,
+    isDetailOpen,
+    isEditing,
+    isCreating,
+    isDeleteDialogOpen,
+    loadSecrets,
+    selectSecret,
+    bulkSelectSecrets,
+    updateSecret,
+    createSecret,
+    deleteSecrets,
+    batchUpdateSecrets,
+    closeDetail,
+    startEditing,
+    stopEditing,
+    startCreating,
+    stopCreating,
+    openDeleteDialog,
+    closeDeleteDialog,
+  } = useSecrets({
+    awsCredentials,
+    onError: (message) => showAlert(message, 'error'),
+    onSuccess: (message) => showAlert(message, 'success'),
+  });
+
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
+  const [previousTab, setPreviousTab] = useState<number | null>(null);
   const [searchTerms, setSearchTerms] = useState<string[]>([]);
   const [currentSearchText, setCurrentSearchText] = useState('');
   const [drawerWidth, setDrawerWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
 
-  const handleDrawerResize = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    const newWidth = Math.max(250, Math.min(600, e.clientX));
-    setDrawerWidth(newWidth);
-  }, [isResizing]);
+  const navigation = useNavigationStack();
+
+  const handleStateChange = useCallback(
+    (type: string, data?: any) => {
+      navigation.push({ type, data });
+    },
+    [navigation],
+  );
+
+  const handleBackButton = useCallback(() => {
+    const lastState = navigation.pop();
+    if (!lastState) return;
+
+    switch (lastState.type) {
+      case 'EDIT':
+        stopEditing();
+        break;
+      case 'DETAIL':
+        closeDetail();
+        if (lastState.data?.previousTab !== undefined) {
+          setCurrentTab(lastState.data.previousTab);
+        }
+        break;
+      case 'SETTINGS':
+        closeAwsSettings();
+        break;
+      case 'CREATE':
+        stopCreating();
+        break;
+      case 'BATCH_UPDATE':
+        setIsBatchUpdateOpen(false);
+        break;
+      case 'DELETE':
+        closeDeleteDialog();
+        break;
+      case 'TAB':
+        if (lastState.data?.tab !== undefined) {
+          setCurrentTab(lastState.data.tab);
+        }
+        break;
+      case 'SEARCH_TERM':
+        setSearchTerms((prev) => prev.slice(0, -1));
+        break;
+    }
+  }, [
+    navigation,
+    stopEditing,
+    closeDetail,
+    closeAwsSettings,
+    stopCreating,
+    closeDeleteDialog,
+  ]);
+
+  const handleTabChange = (newTab: number) => {
+    handleStateChange('TAB', { tab: currentTab });
+    setCurrentTab(newTab);
+  };
+
+  const handleSecretSelect = (secret: Secret) => {
+    handleStateChange('DETAIL', { previousTab: currentTab });
+    selectSecret(secret);
+    setCurrentTab(0);
+  };
+
+  const handleStartEditing = () => {
+    handleStateChange('EDIT');
+    startEditing();
+  };
+
+  const handleOpenSettings = () => {
+    handleStateChange('SETTINGS');
+    openAwsSettings();
+  };
+
+  const handleStartCreating = () => {
+    handleStateChange('CREATE');
+    startCreating();
+  };
+
+  const handleSearchTermAdd = (term: string) => {
+    handleStateChange('SEARCH_TERM');
+    setSearchTerms((prev) => [...prev, term]);
+  };
+
+  useEffect(() => {
+    const handleMouseBack = (e: MouseEvent) => {
+      if (e.button === 3 || e.button === 4) {
+        e.preventDefault();
+        handleBackButton();
+      }
+    };
+
+    window.addEventListener('mouseup', handleMouseBack);
+
+    // 트랙패드 제스처 이벤트 리스너
+    const unsubscribe = window.electron?.onNavigateBack?.(() => {
+      handleBackButton();
+    });
+
+    return () => {
+      window.removeEventListener('mouseup', handleMouseBack);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [handleBackButton]);
+
+  const handleDrawerResize = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = Math.max(250, Math.min(600, e.clientX));
+      setDrawerWidth(newWidth);
+    },
+    [isResizing],
+  );
 
   useEffect(() => {
     if (isResizing) {
@@ -96,68 +246,35 @@ export default function App() {
     },
   });
 
-  const { alertMessage, alertSeverity, isAlertOpen, showAlert, hideAlert } =
-    useAlert();
-
-  const {
-    awsCredentials,
-    isAwsSettingsOpen,
-    openAwsSettings,
-    closeAwsSettings,
-    saveAwsCredentials,
-  } = useAwsCredentials();
-
-  const {
-    secrets,
-    selectedSecret,
-    selectedSecrets,
-    isLoading,
-    isDetailOpen,
-    isEditing,
-    isCreating,
-    isDeleteDialogOpen,
-    loadSecrets,
-    selectSecret,
-    bulkSelectSecrets,
-    updateSecret,
-    createSecret,
-    deleteSecrets,
-    batchUpdateSecrets,
-    closeDetail,
-    startEditing,
-    stopEditing,
-    startCreating,
-    stopCreating,
-    openDeleteDialog,
-    closeDeleteDialog,
-  } = useSecrets({
-    awsCredentials,
-    onError: (message) => showAlert(message, 'error'),
-    onSuccess: (message) => showAlert(message, 'success'),
-  });
-
-  const handleSaveAwsCredentials = async (credentials: AwsCredentials) => {
-    try {
-      await saveAwsCredentials(credentials, () => {
-        showAlert('AWS 자격 증명이 저장되었습니다.', 'success');
-        loadSecrets();
-      });
-    } catch (error) {
-      showAlert('AWS 자격 증명 저장에 실패했습니다.', 'error');
+  const handleSaveAwsCredentials = (credentials: AwsCredentials) => {
+    // 필수 필드 검증
+    if (
+      !credentials.accessKeyId ||
+      !credentials.secretAccessKey ||
+      !credentials.region
+    ) {
+      showAlert('필수 필드가 누락되었습니다.', 'error');
+      return;
     }
+
+    // 자격 증명 설정
+    setCredentials(credentials);
+    showAlert('AWS 자격 증명이 설정되었습니다.', 'success');
+    loadSecrets();
   };
 
-  const handleSecretSelect = (secret: Secret) => {
-    selectSecret(secret);
-    setCurrentTab(0);
-  };
-
-  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (event.key === 'Enter' && currentSearchText.trim()) {
       event.preventDefault();
       setSearchTerms([...searchTerms, currentSearchText.trim()]);
       setCurrentSearchText('');
-    } else if (event.key === 'Backspace' && !currentSearchText && searchTerms.length > 0) {
+    } else if (
+      event.key === 'Backspace' &&
+      !currentSearchText &&
+      searchTerms.length > 0
+    ) {
       // 입력창이 비어있을 때 백스페이스를 누르면 마지막 검색어 제거
       event.preventDefault();
       setSearchTerms(searchTerms.slice(0, -1));
@@ -165,7 +282,7 @@ export default function App() {
   };
 
   const handleRemoveSearchTerm = (termToRemove: string) => {
-    setSearchTerms(searchTerms.filter(term => term !== termToRemove));
+    setSearchTerms(searchTerms.filter((term) => term !== termToRemove));
   };
 
   return (
@@ -178,7 +295,7 @@ export default function App() {
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                 Secrets Manager GUI
               </Typography>
-              <IconButton color="inherit" onClick={openAwsSettings}>
+              <IconButton color="inherit" onClick={handleOpenSettings}>
                 <SettingsIcon />
               </IconButton>
               <IconButton
@@ -206,61 +323,111 @@ export default function App() {
             }}
           >
             <Toolbar variant="dense" />
-            <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
-              <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-                시크릿 목록
-              </Typography>
-              <IconButton size="small" onClick={startCreating}>
-                <AddIcon />
-              </IconButton>
-            </Box>
-
-            <Box sx={{ px: 1, py: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <TextField
-                size="small"
-                fullWidth
-                value={currentSearchText}
-                placeholder={searchTerms.length ? "" : "검색어 입력 후 Enter..."}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
+            <Box
+              sx={{
+                p: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                borderBottom: 1,
+                borderColor: 'divider',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  bgcolor: 'background.default',
+                  borderRadius: 2,
+                  p: 1,
+                  flex: 1,
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
                 }}
-                onChange={(e) => setCurrentSearchText(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-              />
-              {searchTerms.length > 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, flexGrow: 1 }}>
+              >
+                <SearchIcon fontSize="small" color="action" />
+                <Box
+                  sx={{
+                    position: 'relative',
+                    flexGrow: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    placeholder="시크릿 이름 검색..."
+                    value={currentSearchText}
+                    onChange={(e) => setCurrentSearchText(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    variant="standard"
+                    sx={{
+                      flex: 1,
+                      minWidth: 100,
+                      '& .MuiInput-root': {
+                        fontSize: '0.875rem',
+                        '&:before, &:after': { display: 'none' },
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 0.5,
+                      flexGrow: 1,
+                      overflow: 'hidden',
+                    }}
+                  >
                     {searchTerms.map((term, index) => (
                       <Chip
                         key={index}
                         label={term}
                         size="small"
                         onDelete={() => handleRemoveSearchTerm(term)}
+                        sx={{
+                          height: 24,
+                          flexShrink: 0,
+                          '& .MuiChip-label': { px: 1, fontSize: '0.75rem' },
+                          '& .MuiChip-deleteIcon': { fontSize: '0.75rem' },
+                        }}
                       />
                     ))}
                   </Box>
+                </Box>
+                {searchTerms.length > 0 && (
                   <IconButton
                     size="small"
                     onClick={() => setSearchTerms([])}
-                    sx={{ p: 0.5 }}
+                    sx={{
+                      p: 0.5,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
                   >
                     <ClearIcon fontSize="small" />
                   </IconButton>
-                </Box>
-              )}
+                )}
+              </Box>
+              <IconButton
+                size="small"
+                onClick={handleStartCreating}
+                sx={{
+                  flexShrink: 0,
+                  bgcolor: 'background.default',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <AddIcon fontSize="small" />
+              </IconButton>
             </Box>
 
-            <Divider />
-
-            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <Box sx={{ flexGrow: 1, overflow: 'auto', mt: 1 }}>
               <SecretList
                 secrets={secrets}
-                onSelect={selectSecret}
-                onAdd={startCreating}
+                onSelect={handleSecretSelect}
+                onAdd={handleStartCreating}
                 onBulkSelect={bulkSelectSecrets}
                 searchTerms={searchTerms}
               />
@@ -320,7 +487,7 @@ export default function App() {
               >
                 <Tabs
                   value={currentTab}
-                  onChange={(_, newValue) => setCurrentTab(newValue)}
+                  onChange={(_, newValue) => handleTabChange(newValue)}
                 >
                   <Tab label="상세 정보" />
                   <Tab label="검색" />
@@ -331,7 +498,10 @@ export default function App() {
               {currentTab === 0 && (
                 <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                   {selectedSecret && !isEditing && (
-                    <SecretDetail secret={selectedSecret} onEdit={startEditing} />
+                    <SecretDetail
+                      secret={selectedSecret}
+                      onEdit={handleStartEditing}
+                    />
                   )}
                   {selectedSecret && isEditing && (
                     <SecretEdit

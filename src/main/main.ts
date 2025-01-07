@@ -57,28 +57,27 @@ const createWindow = async () => {
   };
 
   mainWindow = new BrowserWindow({
-    show: false,
-    width: 1024,
-    height: 728,
-    icon: getAssetPath('icon.png'),
+    width: 1200,
+    height: 800,
     webPreferences: {
-      preload: app.isPackaged
-        ? path.join(__dirname, 'preload.js')
-        : path.join(__dirname, '../../.erb/dll/preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true,
+      contextIsolation: true,
     },
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined');
-    }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-    }
+    if (!mainWindow) return;
+
+    mainWindow.setTouchBar(null);
+    mainWindow.webContents.on('did-finish-load', () => {
+      if (!mainWindow) return;
+      mainWindow.webContents.executeJavaScript(`
+        navigator.maxTouchPoints = 5;
+      `);
+    });
   });
 
   mainWindow.on('closed', () => {
@@ -97,6 +96,15 @@ const createWindow = async () => {
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
+
+  if (process.platform === 'darwin') {
+    mainWindow.on('swipe', (e, direction) => {
+      if (!mainWindow) return;
+      if (direction === 'right') {
+        mainWindow.webContents.send('navigate-back');
+      }
+    });
+  }
 };
 
 app
@@ -130,18 +138,11 @@ ipcMain.handle('get-aws-credentials', async () => {
       return null;
     }
 
-    console.log('Credentials file path:', credentialsPath);
-    console.log('Config file path:', configPath);
-
     const credentials = parse(readFileSync(credentialsPath, 'utf-8'));
     const config = parse(readFileSync(configPath, 'utf-8'));
     const profile = 'default';
 
-    console.log('Parsed credentials:', credentials);
-    console.log('Parsed config:', config);
-
     if (!credentials[profile]) {
-      console.log('No default profile found in credentials');
       return null;
     }
 

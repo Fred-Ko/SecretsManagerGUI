@@ -61,10 +61,7 @@ export function useSecrets({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const loadSecrets = useCallback(async () => {
-    if (!awsCredentials) {
-      onError(
-        'AWS 자격 증명이 설정되어 있지 않습니다. 설정 화면으로 이동합니다.',
-      );
+    if (!awsCredentials || !awsCredentials.accessKeyId || !awsCredentials.secretAccessKey || !awsCredentials.region) {
       return;
     }
 
@@ -213,11 +210,7 @@ export function useSecrets({
   const batchUpdateSecrets = async (
     updates: Array<{ secret: Secret; key: string; newValue: string }>,
   ) => {
-    if (!awsCredentials) {
-      onError('AWS 자격 증명이 설정되어 있지 않습니다.');
-      return;
-    }
-
+    if (!awsCredentials) return;
     const client = createSecretsManagerClient(awsCredentials);
 
     try {
