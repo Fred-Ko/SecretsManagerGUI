@@ -262,7 +262,6 @@ export default function App() {
                 onSelect={selectSecret}
                 onAdd={startCreating}
                 onBulkSelect={bulkSelectSecrets}
-                onDelete={openDeleteDialog}
                 searchTerms={searchTerms}
               />
             </Box>

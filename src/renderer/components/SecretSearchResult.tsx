@@ -415,6 +415,9 @@ export default function SecretSearchResult({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  borderRight: 1,
+                  borderColor: 'divider',
+                  mr: 2,
                 }}>
                   <Checkbox
                     checked={selectedResults.length > 0 && selectedResults.length === searchResults.length}
@@ -437,7 +440,11 @@ export default function SecretSearchResult({
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    pr: 4,
+                    px: 2,
+                    borderRight: 1,
+                    borderColor: 'divider',
+                    width: `${columnWidths.name}px`,
+                    boxSizing: 'border-box',
                   }}>
                     시크릿 이름
                   </Box>
@@ -451,7 +458,11 @@ export default function SecretSearchResult({
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    pr: 4,
+                    px: 2,
+                    borderRight: 1,
+                    borderColor: 'divider',
+                    width: `${columnWidths.key}px`,
+                    boxSizing: 'border-box',
                   }}>
                     키
                   </Box>
@@ -465,7 +476,9 @@ export default function SecretSearchResult({
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    pr: 4,
+                    px: 2,
+                    width: `${columnWidths.value}px`,
+                    boxSizing: 'border-box',
                   }}>
                     값
                   </Box>
@@ -500,11 +513,24 @@ export default function SecretSearchResult({
                           borderColor: 'divider',
                           px: 2,
                           py: 1,
-                          '&:hover': { bgcolor: 'action.hover' },
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                            '& .column-divider': {
+                              borderColor: 'divider',
+                            }
+                          },
                           bgcolor: 'background.paper',
                         }}
                       >
-                        <Box sx={{ width: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box sx={{
+                          width: 50,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRight: 1,
+                          borderColor: 'divider',
+                          mr: 2,
+                        }}>
                           <Checkbox
                             checked={selectedResults.some(
                               (r) =>
@@ -529,11 +555,21 @@ export default function SecretSearchResult({
                           />
                         </Box>
                         <Box sx={{
-                          width: columnWidths.name,
+                          width: `${columnWidths.name}px`,
                           display: 'flex',
                           alignItems: 'center',
-                          pr: 4,
+                          px: 2,
+                          borderRight: 1,
+                          borderColor: 'divider',
+                          boxSizing: 'border-box',
                         }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(result.secretName)}
+                            title="이름 복사"
+                          >
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
                           <Link
                             component="button"
                             onClick={() => onSecretSelect(result.secret)}
@@ -543,59 +579,62 @@ export default function SecretSearchResult({
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
+                              ml: 1,
                             }}
                           >
                             {result.secretName}
                           </Link>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleCopy(result.secretName)}
-                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
-                          >
-                            <CopyIcon fontSize="small" />
-                          </IconButton>
                         </Box>
                         <Box sx={{
-                          width: columnWidths.key,
+                          width: `${columnWidths.key}px`,
                           display: 'flex',
                           alignItems: 'center',
-                          pr: 4,
+                          px: 2,
+                          borderRight: 1,
+                          borderColor: 'divider',
+                          boxSizing: 'border-box',
                         }}>
-                          <Box sx={{
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}>{result.key}</Box>
                           <IconButton
                             size="small"
                             onClick={() => handleCopy(result.key)}
-                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                            title="키 복사"
                           >
                             <CopyIcon fontSize="small" />
                           </IconButton>
-                        </Box>
-                        <Box sx={{
-                          width: columnWidths.value,
-                          display: 'flex',
-                          alignItems: 'center',
-                          pr: 4,
-                        }}>
                           <Box sx={{
                             flex: 1,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                          }}>
-                            {result.value}
-                          </Box>
+                            ml: 1,
+                          }}>{result.key}</Box>
+                        </Box>
+                        <Box sx={{
+                          width: `${columnWidths.value}px`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          px: 2,
+                          boxSizing: 'border-box',
+                        }}>
                           <IconButton
                             size="small"
                             onClick={() => handleCopy(result.value)}
-                            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                            title="값 복사"
                           >
                             <CopyIcon fontSize="small" />
                           </IconButton>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-all',
+                              flex: 1,
+                              width: `${columnWidths.value - 40}px`,
+                            }}
+                          >
+                            {result.value}
+                          </Typography>
                         </Box>
                       </Box>
                     );
