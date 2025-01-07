@@ -1,41 +1,45 @@
-import { ContentCopy as CopyIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Edit as EditIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
   IconButton,
   Paper,
+  Typography,
+  TextField,
   Tab,
+  Tabs,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Tabs,
-  Typography,
+  Chip,
 } from '@mui/material';
-import { useState } from 'react';
+import { useSnackbar } from 'notistack';
 import { Secret } from '../../main/interfaces/SecretManager';
+import { useState } from 'react';
 
 interface Props {
   secret: Secret;
   onEdit: () => void;
 }
 
-type ViewFormat = 'overview' | 'table' | 'json' | 'env';
+type ViewFormat = 'table' | 'json' | 'env';
 
 export default function SecretDetail({ secret, onEdit }: Props) {
-  const [viewFormat, setViewFormat] = useState<ViewFormat>('overview');
+  const { enqueueSnackbar } = useSnackbar();
+  const [viewFormat, setViewFormat] = useState<ViewFormat>('table');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleCopy = async (text: string, key: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 1000);
+  const handleCopy = (text: string, key?: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      enqueueSnackbar('복사되었습니다', { variant: 'success' });
+      if (key) {
+        setCopiedKey(key);
+        setTimeout(() => setCopiedKey(null), 1000);
+      }
+    });
   };
 
   const secretValue = (() => {
@@ -49,66 +53,15 @@ export default function SecretDetail({ secret, onEdit }: Props) {
 
   if (!secretValue || typeof secretValue !== 'object') {
     return (
-      <Typography color="error">
-        시크릿 값을 파싱할 수 없습니다. JSON 형식이 아닙니다.
-      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Paper sx={{ p: 2 }}>
+          <Typography color="error">
+            시크릿 값을 파싱할 수 없습니다. JSON 형식이 아닙니다.
+          </Typography>
+        </Paper>
+      </Box>
     );
   }
-
-  const renderOverview = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom color="text.secondary">
-          설명
-        </Typography>
-        <Typography variant="body2">{secret.Description || '-'}</Typography>
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom color="text.secondary">
-          ARN
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              fontFamily: 'monospace',
-              bgcolor: 'action.hover',
-              p: 0.5,
-              borderRadius: 1,
-              flexGrow: 1,
-            }}
-          >
-            {secret.ARN}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => handleCopy(secret.ARN || '', 'arn')}
-          >
-            {copiedKey === 'arn' ? (
-              <Chip
-                label="복사됨"
-                color="success"
-                size="small"
-                variant="outlined"
-              />
-            ) : (
-              <CopyIcon fontSize="small" />
-            )}
-          </IconButton>
-        </Box>
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom color="text.secondary">
-          마지막 수정일
-        </Typography>
-        <Typography variant="body2">
-          {new Date(secret.LastChangedDate!).toLocaleString('ko-KR')}
-        </Typography>
-      </Paper>
-    </Box>
-  );
 
   const renderTable = () => (
     <TableContainer component={Paper} variant="outlined">
@@ -123,18 +76,16 @@ export default function SecretDetail({ secret, onEdit }: Props) {
         <TableBody>
           {Object.entries(secretValue).map(([key, value]) => (
             <TableRow key={key}>
-              <TableCell
-                component="th"
-                scope="row"
-                sx={{ fontWeight: 'medium' }}
-              >
+              <TableCell component="th" scope="row" sx={{ fontWeight: 'medium' }}>
                 {key}
               </TableCell>
-              <TableCell sx={{
-                fontFamily: 'monospace',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <TableCell
+                sx={{
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
                 {String(value)}
               </TableCell>
               <TableCell>
@@ -234,51 +185,90 @@ export default function SecretDetail({ secret, onEdit }: Props) {
   };
 
   return (
-    <Card>
-      <CardHeader
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6" component="div">
-              {secret.Name}
-            </Typography>
-            <Button
-              startIcon={<EditIcon />}
-              onClick={onEdit}
-              size="small"
-              sx={{ ml: 'auto' }}
-            >
-              수정
-            </Button>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <Typography variant="h6" component="h2">
+                {secret.Name}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => handleCopy(secret.Name || '')}
+                title="이름 복사"
+              >
+                <CopyIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <TextField
+                label="ARN"
+                value={secret.ARN}
+                size="small"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                  endAdornment: (
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      onClick={() => handleCopy(secret.ARN || '')}
+                      title="ARN 복사"
+                    >
+                      <CopyIcon fontSize="small" />
+                    </IconButton>
+                  ),
+                }}
+              />
+              <TextField
+                label="마지막 수정일"
+                value={new Date(secret.LastChangedDate || '').toLocaleString()}
+                size="small"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+              <TextField
+                label="설명"
+                value={secret.Description || '미 사용 여부 확인'}
+                size="small"
+                fullWidth
+                multiline
+                minRows={2}
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Box>
           </Box>
-        }
-        subheader={
-          <Box sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-            <div>ARN: {secret.ARN}</div>
-            <div>
-              마지막 변경:{' '}
-              {new Date(secret.LastChangedDate!).toLocaleString('ko-KR')}
-            </div>
-            {secret.Description && <div>설명: {secret.Description}</div>}
-          </Box>
-        }
-      />
-      <CardContent>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={onEdit}
+            sx={{ flexShrink: 0 }}
+          >
+            수정
+          </Button>
+        </Box>
+      </Paper>
+
+      <Paper sx={{ p: 2 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs
             value={viewFormat}
             onChange={(_, newValue: ViewFormat) => setViewFormat(newValue)}
           >
-            <Tab label="개요" value="overview" />
             <Tab label="값" value="table" />
             <Tab label="JSON" value="json" />
             <Tab label=".env" value="env" />
           </Tabs>
         </Box>
-        {viewFormat === 'overview' && renderOverview()}
         {viewFormat === 'table' && renderTable()}
         {viewFormat === 'json' && renderJson()}
         {viewFormat === 'env' && renderEnv()}
-      </CardContent>
-    </Card>
+      </Paper>
+    </Box>
   );
 }

@@ -577,7 +577,7 @@ export default function App() {
               </Box>
 
               {currentTab === 0 && (
-                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1 }}>
                   {selectedSecret && !isEditing && (
                     <SecretDetail
                       secret={selectedSecret}
