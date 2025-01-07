@@ -177,11 +177,6 @@ export default function App() {
     startCreating();
   };
 
-  const handleSearchTermAdd = (term: string) => {
-    handleStateChange('SEARCH_TERM');
-    setSearchTerms((prev) => [...prev, term]);
-  };
-
   useEffect(() => {
     const handleMouseBack = (e: MouseEvent) => {
       if (e.button === 3 || e.button === 4) {
