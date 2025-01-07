@@ -24,6 +24,8 @@ import {
   TextField,
   InputAdornment,
   Chip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { useState, useCallback, useEffect } from 'react';
 import { Secret } from '../main/interfaces/SecretManager';
@@ -93,6 +95,8 @@ export default function App() {
   const [currentSearchText, setCurrentSearchText] = useState('');
   const [drawerWidth, setDrawerWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navigation = useNavigationStack();
 
@@ -285,6 +289,30 @@ export default function App() {
     setSearchTerms(searchTerms.filter((term) => term !== termToRemove));
   };
 
+  // 자동 리프레시 설정
+  useEffect(() => {
+    if (autoRefreshInterval === null) return;
+
+    const interval = setInterval(() => {
+      loadSecrets();
+    }, autoRefreshInterval * 1000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshInterval, loadSecrets]);
+
+  const handleRefreshMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleRefreshMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAutoRefreshChange = (interval: number | null) => {
+    setAutoRefreshInterval(interval);
+    handleRefreshMenuClose();
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <SnackbarProvider maxSnack={3} autoHideDuration={2000}>
@@ -298,13 +326,66 @@ export default function App() {
               <IconButton color="inherit" onClick={handleOpenSettings}>
                 <SettingsIcon />
               </IconButton>
-              <IconButton
-                color="inherit"
-                onClick={loadSecrets}
-                disabled={isLoading}
-              >
-                <RefreshIcon />
-              </IconButton>
+              <Box sx={{ position: 'relative' }}>
+                <IconButton
+                  color="inherit"
+                  onClick={loadSecrets}
+                  disabled={isLoading}
+                  sx={{ mr: 0.5 }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="inherit"
+                  onClick={handleRefreshMenuClick}
+                  sx={{
+                    position: 'absolute',
+                    right: -8,
+                    bottom: -8,
+                    width: 20,
+                    height: 20,
+                    bgcolor: autoRefreshInterval ? 'primary.main' : 'transparent',
+                    '&:hover': {
+                      bgcolor: autoRefreshInterval ? 'primary.dark' : 'action.hover',
+                    },
+                  }}
+                >
+                  <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
+                    {autoRefreshInterval ? `${autoRefreshInterval}s` : '⌵'}
+                  </Typography>
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleRefreshMenuClose}
+                >
+                  <MenuItem
+                    onClick={() => handleAutoRefreshChange(null)}
+                    selected={autoRefreshInterval === null}
+                  >
+                    사용 안함
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleAutoRefreshChange(3)}
+                    selected={autoRefreshInterval === 3}
+                  >
+                    3초
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleAutoRefreshChange(5)}
+                    selected={autoRefreshInterval === 5}
+                  >
+                    5초
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleAutoRefreshChange(10)}
+                    selected={autoRefreshInterval === 10}
+                  >
+                    10초
+                  </MenuItem>
+                </Menu>
+              </Box>
             </Toolbar>
           </AppBar>
 
