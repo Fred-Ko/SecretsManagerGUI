@@ -1,24 +1,25 @@
-import { Edit as EditIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
+import { ContentCopy as CopyIcon, Edit as EditIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
+  Chip,
   IconButton,
   Paper,
-  Typography,
-  TextField,
   Tab,
-  Tabs,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
+  Tabs,
+  TextField,
+  Typography,
+  styled,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import { Secret } from '../../main/interfaces/SecretManager';
 import { useState } from 'react';
+import { Secret } from '../../main/interfaces/SecretManager';
 
 interface Props {
   secret: Secret;
@@ -26,6 +27,24 @@ interface Props {
 }
 
 type ViewFormat = 'table' | 'json' | 'env';
+
+const StyledTableCell = styled(TableCell)(({ theme }) => ({
+  padding: theme.spacing(1, 2),
+  borderRight: `1px solid ${theme.palette.divider}`,
+  '&:last-child': {
+    borderRight: 'none',
+  },
+}));
+
+const StyledTableRow = styled(TableRow)(({ theme }) => ({
+  '&:nth-of-type(odd)': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  // hide last border
+  '&:last-child td, &:last-child th': {
+    border: 0,
+  },
+}));
 
 export default function SecretDetail({ secret, onEdit }: Props) {
   const { enqueueSnackbar } = useSnackbar();
@@ -65,47 +84,58 @@ export default function SecretDetail({ secret, onEdit }: Props) {
 
   const renderTable = () => (
     <TableContainer component={Paper} variant="outlined">
-      <Table>
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell>키</TableCell>
-            <TableCell>값</TableCell>
-            <TableCell width={48} />
+            <StyledTableCell>키</StyledTableCell>
+            <StyledTableCell>값</StyledTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {Object.entries(secretValue).map(([key, value]) => (
-            <TableRow key={key}>
-              <TableCell component="th" scope="row" sx={{ fontWeight: 'medium' }}>
-                {key}
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {String(value)}
-              </TableCell>
-              <TableCell>
-                <IconButton
-                  size="small"
-                  onClick={() => handleCopy(String(value), key)}
-                >
-                  {copiedKey === key ? (
-                    <Chip
-                      label="복사됨"
-                      color="success"
-                      size="small"
-                      variant="outlined"
-                    />
-                  ) : (
+            <StyledTableRow key={key}>
+              <StyledTableCell sx={{ width: '30%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleCopy(key)}
+                    title="키 복사"
+                  >
                     <CopyIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </TableCell>
-            </TableRow>
+                  </IconButton>
+                  <Typography
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {key}
+                  </Typography>
+                </Box>
+              </StyledTableCell>
+              <StyledTableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleCopy(String(value))}
+                    title="값 복사"
+                  >
+                    <CopyIcon fontSize="small" />
+                  </IconButton>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {String(value)}
+                  </Typography>
+                </Box>
+              </StyledTableCell>
+            </StyledTableRow>
           ))}
         </TableBody>
       </Table>
@@ -187,70 +217,69 @@ export default function SecretDetail({ secret, onEdit }: Props) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <Typography variant="h6" component="h2">
-                {secret.Name}
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => handleCopy(secret.Name || '')}
-                title="이름 복사"
-              >
-                <CopyIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <TextField
-                label="ARN"
-                value={secret.ARN}
-                size="small"
-                fullWidth
-                InputProps={{
-                  readOnly: true,
-                  endAdornment: (
-                    <IconButton
-                      size="small"
-                      edge="end"
-                      onClick={() => handleCopy(secret.ARN || '')}
-                      title="ARN 복사"
-                    >
-                      <CopyIcon fontSize="small" />
-                    </IconButton>
-                  ),
-                }}
-              />
-              <TextField
-                label="마지막 수정일"
-                value={new Date(secret.LastChangedDate || '').toLocaleString()}
-                size="small"
-                fullWidth
-                InputProps={{
-                  readOnly: true,
-                }}
-              />
-              <TextField
-                label="설명"
-                value={secret.Description || '미 사용 여부 확인'}
-                size="small"
-                fullWidth
-                multiline
-                minRows={2}
-                InputProps={{
-                  readOnly: true,
-                }}
-              />
-            </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" component="h2">
+              {secret.Name}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => handleCopy(secret.Name || '')}
+              title="이름 복사"
+            >
+              <CopyIcon fontSize="small" />
+            </IconButton>
+            <Box sx={{ flex: 1 }} />
+            <Button
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={onEdit}
+              size="small"
+            >
+              수정
+            </Button>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
-            onClick={onEdit}
-            sx={{ flexShrink: 0 }}
-          >
-            수정
-          </Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <TextField
+              label="ARN"
+              value={secret.ARN}
+              size="small"
+              fullWidth
+              InputProps={{
+                readOnly: true,
+                endAdornment: (
+                  <IconButton
+                    size="small"
+                    edge="end"
+                    onClick={() => handleCopy(secret.ARN || '')}
+                    title="ARN 복사"
+                  >
+                    <CopyIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+            />
+            <TextField
+              label="마지막 수정일"
+              value={new Date(secret.LastChangedDate || '').toLocaleString()}
+              size="small"
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+            <TextField
+              label="설명"
+              value={secret.Description || '미 사용 여부 확인'}
+              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+          </Box>
         </Box>
       </Paper>
 

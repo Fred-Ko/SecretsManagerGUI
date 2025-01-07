@@ -95,6 +95,7 @@ export default function App() {
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(
     null,
   );
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navigation = useNavigationStack();
@@ -290,13 +291,31 @@ export default function App() {
 
   // 자동 리프레시 설정
   useEffect(() => {
+    if (autoRefreshInterval === null) {
+      setRemainingTime(null);
+      return;
+    }
+
+    setRemainingTime(autoRefreshInterval);
+    const timer = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev === null || prev <= 0) return autoRefreshInterval;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [autoRefreshInterval]);
+
+  useEffect(() => {
     if (autoRefreshInterval === null) return;
 
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       loadSecrets();
+      setRemainingTime(autoRefreshInterval);
     }, autoRefreshInterval * 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [autoRefreshInterval, loadSecrets]);
 
   const handleRefreshMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -355,7 +374,11 @@ export default function App() {
                   }}
                 >
                   <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
-                    {autoRefreshInterval ? `${autoRefreshInterval}s` : '⌵'}
+                    {autoRefreshInterval
+                      ? remainingTime !== null
+                        ? `${remainingTime}s`
+                        : `${autoRefreshInterval}s`
+                      : '⌵'}
                   </Typography>
                 </IconButton>
                 <Menu

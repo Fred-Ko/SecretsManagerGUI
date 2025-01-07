@@ -138,6 +138,219 @@ const StyledCheckboxCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
+// 테이블 컴포넌트들을 메모이제이션
+const TableComponent = React.memo((props: any) => (
+  <Table
+    {...props}
+    stickyHeader
+    size="small"
+    style={{ tableLayout: 'fixed' }}
+  />
+));
+
+const TableHeadComponent = React.memo((props: any) => <TableHead {...props} />);
+
+const TableBodyComponent = React.memo(
+  React.forwardRef<HTMLTableSectionElement>((props, ref) => (
+    <TableBody {...props} ref={ref} />
+  )),
+);
+
+// 행 컴포넌트 메모이제이션
+const TableRowComponent = React.memo(StyledTableRow);
+
+// 헤더 컨텐츠 컴포넌트 분리
+const HeaderContent = React.memo(
+  ({
+    columnWidths,
+    currentResizer,
+    resizerRef,
+    handleResizeStart,
+    selectedResults,
+    totalResults,
+    onSelectAll,
+  }: {
+    columnWidths: { name: number; key: number; value: number };
+    currentResizer: string | null;
+    resizerRef: React.RefObject<HTMLDivElement>;
+    handleResizeStart: (
+      e: React.MouseEvent,
+      column: 'name' | 'key' | 'value',
+    ) => void;
+    selectedResults: SearchResult[];
+    totalResults: number;
+    onSelectAll: (checked: boolean) => void;
+  }) => (
+    <TableRow>
+      <StyledCheckboxCell>
+        <Checkbox
+          checked={
+            selectedResults.length > 0 &&
+            selectedResults.length === totalResults
+          }
+          indeterminate={
+            selectedResults.length > 0 && selectedResults.length < totalResults
+          }
+          onChange={(e) => onSelectAll(e.target.checked)}
+        />
+      </StyledCheckboxCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.name,
+          minWidth: columnWidths.name,
+          maxWidth: columnWidths.name,
+        }}
+      >
+        시크릿 이름
+        <div
+          ref={currentResizer === 'name' ? resizerRef : null}
+          className={`resizer ${currentResizer === 'name' ? 'isResizing' : ''}`}
+          onMouseDown={(e) => handleResizeStart(e, 'name')}
+        />
+      </StyledTableCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.key,
+          minWidth: columnWidths.key,
+          maxWidth: columnWidths.key,
+        }}
+      >
+        설명
+        <div
+          ref={currentResizer === 'key' ? resizerRef : null}
+          className={`resizer ${currentResizer === 'key' ? 'isResizing' : ''}`}
+          onMouseDown={(e) => handleResizeStart(e, 'key')}
+        />
+      </StyledTableCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.value,
+          minWidth: columnWidths.value,
+        }}
+      >
+        마지막 수정일
+        <div
+          ref={currentResizer === 'value' ? resizerRef : null}
+          className={`resizer ${currentResizer === 'value' ? 'isResizing' : ''}`}
+          onMouseDown={(e) => handleResizeStart(e, 'value')}
+        />
+      </StyledTableCell>
+    </TableRow>
+  ),
+);
+
+// 행 컨텐츠 컴포넌트 분리
+const RowContent = React.memo(
+  ({
+    result,
+    columnWidths,
+    isSelected,
+    onSelect,
+    onCopy,
+    onSecretSelect,
+  }: {
+    result: SearchResult;
+    columnWidths: { name: number; key: number; value: number };
+    isSelected: boolean;
+    onSelect: (checked: boolean) => void;
+    onCopy: (text: string) => void;
+    onSecretSelect: (secret: Secret) => void;
+  }) => (
+    <>
+      <StyledCheckboxCell>
+        <Checkbox
+          checked={isSelected}
+          onChange={(e) => onSelect(e.target.checked)}
+        />
+      </StyledCheckboxCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.name,
+          minWidth: columnWidths.name,
+          maxWidth: columnWidths.name,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            size="small"
+            onClick={() => onCopy(result.secretName)}
+            title="이름 복사"
+          >
+            <CopyIcon fontSize="small" />
+          </IconButton>
+          <Link
+            component="button"
+            onClick={() => onSecretSelect(result.secret)}
+            sx={{
+              textAlign: 'left',
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {result.secretName}
+          </Link>
+        </Box>
+      </StyledTableCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.key,
+          minWidth: columnWidths.key,
+          maxWidth: columnWidths.key,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            size="small"
+            onClick={() => onCopy(result.key)}
+            title="키 복사"
+          >
+            <CopyIcon fontSize="small" />
+          </IconButton>
+          <Typography
+            sx={{
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {result.key}
+          </Typography>
+        </Box>
+      </StyledTableCell>
+      <StyledTableCell
+        sx={{
+          width: columnWidths.value,
+          minWidth: columnWidths.value,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            size="small"
+            onClick={() => onCopy(result.value)}
+            title="값 복사"
+          >
+            <CopyIcon fontSize="small" />
+          </IconButton>
+          <Typography
+            variant="body2"
+            sx={{
+              fontFamily: 'monospace',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              flex: 1,
+            }}
+          >
+            {result.value}
+          </Typography>
+        </Box>
+      </StyledTableCell>
+    </>
+  ),
+);
+
 export default function SecretSearchResult({
   secrets,
   onSecretSelect,
@@ -154,24 +367,22 @@ export default function SecretSearchResult({
   const [selectedResults, setSelectedResults] = useState<SearchResult[]>([]);
   const { enqueueSnackbar } = useSnackbar();
 
-  // 화면 너비에 따라 컬럼 너비 자동 조절
+  // 초기 컬럼 너비 설정
   const [columnWidths, setColumnWidths] = useState({
     name: 250,
     key: 250,
     value: 400,
   });
 
-  // 화면 크기 변경 시 컬럼 너비 자동 조절
+  // 화면 크기 변경 시 컬럼 너비 자동 조절 제거
   useEffect(() => {
     const handleResize = () => {
-      const totalWidth = window.innerWidth - 400; // 여백과 체크박스 영역 고려
+      const totalWidth = window.innerWidth - 400;
       if (totalWidth > 900) {
-        // 최소 너비보다 클 때만 자동 조절
-        setColumnWidths({
-          name: totalWidth * 0.25,
-          key: totalWidth * 0.25,
-          value: totalWidth * 0.5,
-        });
+        setColumnWidths((prev) => ({
+          ...prev,
+          value: Math.max(400, totalWidth - prev.name - prev.key - 50),
+        }));
       }
     };
 
@@ -313,20 +524,16 @@ export default function SecretSearchResult({
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, column: 'name' | 'key' | 'value') => {
+      e.preventDefault();
       setIsResizing(true);
       setCurrentResizer(column);
-      startResizePos.current = e.clientX;
-      startWidth.current = columnWidths[column];
-      currentWidth.current = columnWidths[column];
 
-      // 리사이징 중에는 임시 스타일을 적용
-      if (resizerRef.current) {
-        resizerRef.current.style.position = 'fixed';
-        resizerRef.current.style.height = '100vh';
-        resizerRef.current.style.top = '0';
-        resizerRef.current.style.zIndex = '1300';
-        resizerRef.current.style.opacity = '0.5';
-        resizerRef.current.style.backgroundColor = 'primary.main';
+      // 컬럼의 왼른쪽 경계 위치를 저장
+      const headerCell = e.currentTarget.closest('th');
+      if (headerCell) {
+        const rect = headerCell.getBoundingClientRect();
+        startResizePos.current = rect.right;
+        startWidth.current = columnWidths[column];
       }
     },
     [columnWidths],
@@ -334,58 +541,55 @@ export default function SecretSearchResult({
 
   const handleResizeMove = useCallback(
     (e: MouseEvent) => {
-      if (!isResizing || !currentResizer || !resizerRef.current) return;
+      if (!isResizing || !currentResizer) return;
 
+      // 마우스와 시작 위치의 차이를 이용해 새로운 너비 계산
       const diff = e.clientX - startResizePos.current;
-      currentWidth.current = Math.max(100, startWidth.current + diff);
+      const newWidth = Math.max(100, startWidth.current + diff);
 
-      // 실시간으로는 리사이저의 위치만 업데이트
-      resizerRef.current.style.left = `${e.clientX}px`;
+      // 현재 컬럼의 너비만 업데이트
+      setColumnWidths((prev) => ({
+        ...prev,
+        [currentResizer]: newWidth,
+      }));
+
+      // value 컬럼의 너비 자동 조절
+      if (currentResizer !== 'value') {
+        const totalWidth = window.innerWidth - 400;
+        setColumnWidths((prev) => ({
+          ...prev,
+          value: Math.max(400, totalWidth - prev.name - prev.key - 50),
+        }));
+      }
     },
     [isResizing, currentResizer],
   );
 
   const handleResizeEnd = useCallback(() => {
-    if (currentResizer && currentWidth.current !== startWidth.current) {
-      // 드래그가 끝난 시점에만 실제 컬럼 너비 업데이트
-      setColumnWidths((prev) => {
-        const newWidths = { ...prev };
-        if (
-          currentResizer === 'name' ||
-          currentResizer === 'key' ||
-          currentResizer === 'value'
-        ) {
-          newWidths[currentResizer] = currentWidth.current;
-        }
-        return newWidths;
-      });
-    }
-
-    if (resizerRef.current) {
-      resizerRef.current.style.position = '';
-      resizerRef.current.style.height = '';
-      resizerRef.current.style.top = '';
-      resizerRef.current.style.zIndex = '';
-      resizerRef.current.style.opacity = '';
-      resizerRef.current.style.backgroundColor = '';
-    }
-
     setIsResizing(false);
     setCurrentResizer(null);
-  }, [currentResizer]);
+  }, []);
 
   // 마지막 컬럼(value)은 남은 공간을 모두 차지하도록 설정
   const valueColumnWidth = useMemo(() => {
-    const totalWidth = window.innerWidth - 400; // 전체 너비에서 여백과 체크박스 영역 제외
+    if (isResizing && currentResizer === 'value') {
+      return columnWidths.value;
+    }
+    const totalWidth = window.innerWidth - 400; // 여백과 체크박스 영역 고려
     return Math.max(
       400,
       totalWidth - columnWidths.name - columnWidths.key - 50,
-    ); // 50은 체크박스 컬럼 너비
-  }, [columnWidths.name, columnWidths.key]);
+    );
+  }, [
+    columnWidths.name,
+    columnWidths.key,
+    columnWidths.value,
+    isResizing,
+    currentResizer,
+  ]);
 
   useEffect(() => {
     if (!isResizing) {
-      // 리사이징 중에는 value 컬럼 너비를 자동 조정하지 않음
       setColumnWidths((prev) => ({
         ...prev,
         value: valueColumnWidth,
@@ -404,8 +608,80 @@ export default function SecretSearchResult({
     };
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
+  const tableComponents = useMemo(
+    () => ({
+      Table: TableComponent,
+      TableHead: TableHeadComponent,
+      TableRow: TableRowComponent,
+      TableBody: TableBodyComponent,
+    }),
+    [],
+  );
+
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      setSelectedResults(checked ? searchResults : []);
+    },
+    [searchResults],
+  );
+
+  const renderHeaderContent = useCallback(
+    () => (
+      <HeaderContent
+        columnWidths={columnWidths}
+        currentResizer={currentResizer}
+        resizerRef={resizerRef}
+        handleResizeStart={handleResizeStart}
+        selectedResults={selectedResults}
+        totalResults={searchResults.length}
+        onSelectAll={handleSelectAll}
+      />
+    ),
+    [
+      columnWidths,
+      currentResizer,
+      selectedResults,
+      searchResults.length,
+      handleResizeStart,
+      handleSelectAll,
+    ],
+  );
+
+  const renderRowContent = useCallback(
+    (index: number, result: SearchResult) => (
+      <RowContent
+        result={result}
+        columnWidths={columnWidths}
+        isSelected={selectedResults.some(
+          (r) =>
+            r.secretName === result.secretName &&
+            r.key === result.key &&
+            r.value === result.value,
+        )}
+        onSelect={(checked) => {
+          if (checked) {
+            setSelectedResults([...selectedResults, result]);
+          } else {
+            setSelectedResults(
+              selectedResults.filter(
+                (r) =>
+                  r.secretName !== result.secretName ||
+                  r.key !== result.key ||
+                  r.value !== result.value,
+              ),
+            );
+          }
+        }}
+        onCopy={handleCopy}
+        onSecretSelect={onSecretSelect}
+      />
+    ),
+    [columnWidths, selectedResults, handleCopy, onSecretSelect],
+  );
+
   return (
     <>
+      <div ref={resizerRef} style={{ display: 'none' }} />
       <Paper>
         <Toolbar sx={{ gap: 2, flexWrap: 'wrap', minHeight: 'auto', py: 1 }}>
           <Box
@@ -469,7 +745,7 @@ export default function SecretSearchResult({
                 minWidth: 200,
               }}
             >
-              {mode === 'search' ? (
+              {mode === 'search' || mode === 'batch-update' ? (
                 <>
                   <TextField
                     size="small"
@@ -653,9 +929,47 @@ export default function SecretSearchResult({
                         }}
                       />
                     </StyledCheckboxCell>
-                    <StyledTableCell>시크릿 이름</StyledTableCell>
-                    <StyledTableCell>설명</StyledTableCell>
-                    <StyledTableCell>마지막 수정일</StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.name,
+                        minWidth: columnWidths.name,
+                        maxWidth: columnWidths.name,
+                      }}
+                    >
+                      시크릿 이름
+                      <div
+                        ref={currentResizer === 'name' ? resizerRef : null}
+                        className={`resizer ${currentResizer === 'name' ? 'isResizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'name')}
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.key,
+                        minWidth: columnWidths.key,
+                        maxWidth: columnWidths.key,
+                      }}
+                    >
+                      설명
+                      <div
+                        ref={currentResizer === 'key' ? resizerRef : null}
+                        className={`resizer ${currentResizer === 'key' ? 'isResizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'key')}
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.value,
+                        minWidth: columnWidths.value,
+                      }}
+                    >
+                      마지막 수정일
+                      <div
+                        ref={currentResizer === 'value' ? resizerRef : null}
+                        className={`resizer ${currentResizer === 'value' ? 'isResizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'value')}
+                      />
+                    </StyledTableCell>
                   </TableRow>
                 )}
                 itemContent={(index: number, secret: Secret) => (
@@ -686,7 +1000,13 @@ export default function SecretSearchResult({
                         }}
                       />
                     </StyledCheckboxCell>
-                    <StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.name,
+                        minWidth: columnWidths.name,
+                        maxWidth: columnWidths.name,
+                      }}
+                    >
                       <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                       >
@@ -712,7 +1032,13 @@ export default function SecretSearchResult({
                         </Link>
                       </Box>
                     </StyledTableCell>
-                    <StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.key,
+                        minWidth: columnWidths.key,
+                        maxWidth: columnWidths.key,
+                      }}
+                    >
                       <Typography
                         sx={{
                           overflow: 'hidden',
@@ -723,7 +1049,12 @@ export default function SecretSearchResult({
                         {secret.Description}
                       </Typography>
                     </StyledTableCell>
-                    <StyledTableCell>
+                    <StyledTableCell
+                      sx={{
+                        width: columnWidths.value,
+                        minWidth: columnWidths.value,
+                      }}
+                    >
                       <Typography>
                         {secret.LastChangedDate?.toLocaleString()}
                       </Typography>
@@ -740,203 +1071,9 @@ export default function SecretSearchResult({
               <TableVirtuoso
                 style={{ height: '100%' }}
                 data={searchResults}
-                components={{
-                  Table: (props: any) => (
-                    <Table
-                      {...props}
-                      stickyHeader
-                      size="small"
-                      style={{ tableLayout: 'fixed' }}
-                    />
-                  ),
-                  TableHead: (props: any) => <TableHead {...props} />,
-                  TableRow: StyledTableRow,
-                  TableBody: React.forwardRef<HTMLTableSectionElement>(
-                    (props, ref) => <TableBody {...props} ref={ref} />,
-                  ),
-                }}
-                fixedHeaderContent={() => (
-                  <TableRow>
-                    <StyledCheckboxCell>
-                      <Checkbox
-                        checked={
-                          selectedResults.length > 0 &&
-                          selectedResults.length === searchResults.length
-                        }
-                        indeterminate={
-                          selectedResults.length > 0 &&
-                          selectedResults.length < searchResults.length
-                        }
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedResults(searchResults);
-                          } else {
-                            setSelectedResults([]);
-                          }
-                        }}
-                      />
-                    </StyledCheckboxCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.name,
-                        minWidth: columnWidths.name,
-                        maxWidth: columnWidths.name,
-                      }}
-                    >
-                      시크릿 이름
-                      <div
-                        ref={currentResizer === 'name' ? resizerRef : null}
-                        className={`resizer ${currentResizer === 'name' ? 'isResizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'name')}
-                      />
-                    </StyledTableCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.key,
-                        minWidth: columnWidths.key,
-                        maxWidth: columnWidths.key,
-                      }}
-                    >
-                      키
-                      <div
-                        ref={currentResizer === 'key' ? resizerRef : null}
-                        className={`resizer ${currentResizer === 'key' ? 'isResizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'key')}
-                      />
-                    </StyledTableCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.value,
-                        minWidth: columnWidths.value,
-                      }}
-                    >
-                      값
-                      <div
-                        ref={currentResizer === 'value' ? resizerRef : null}
-                        className={`resizer ${currentResizer === 'value' ? 'isResizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'value')}
-                      />
-                    </StyledTableCell>
-                  </TableRow>
-                )}
-                itemContent={(index: number, result: SearchResult) => (
-                  <>
-                    <StyledCheckboxCell>
-                      <Checkbox
-                        checked={selectedResults.some(
-                          (r) =>
-                            r.secretName === result.secretName &&
-                            r.key === result.key &&
-                            r.value === result.value,
-                        )}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedResults([...selectedResults, result]);
-                          } else {
-                            setSelectedResults(
-                              selectedResults.filter(
-                                (r) =>
-                                  r.secretName !== result.secretName ||
-                                  r.key !== result.key ||
-                                  r.value !== result.value,
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                    </StyledCheckboxCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.name,
-                        minWidth: columnWidths.name,
-                        maxWidth: columnWidths.name,
-                      }}
-                    >
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCopy(result.secretName)}
-                          title="이름 복사"
-                        >
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                        <Link
-                          component="button"
-                          onClick={() => onSecretSelect(result.secret)}
-                          sx={{
-                            textAlign: 'left',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {result.secretName}
-                        </Link>
-                      </Box>
-                    </StyledTableCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.key,
-                        minWidth: columnWidths.key,
-                        maxWidth: columnWidths.key,
-                      }}
-                    >
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCopy(result.key)}
-                          title="키 복사"
-                        >
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                        <Typography
-                          sx={{
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {result.key}
-                        </Typography>
-                      </Box>
-                    </StyledTableCell>
-                    <StyledTableCell
-                      sx={{
-                        width: columnWidths.value,
-                        minWidth: columnWidths.value,
-                      }}
-                    >
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCopy(result.value)}
-                          title="값 복사"
-                        >
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontFamily: 'monospace',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-all',
-                            flex: 1,
-                          }}
-                        >
-                          {result.value}
-                        </Typography>
-                      </Box>
-                    </StyledTableCell>
-                  </>
-                )}
+                components={tableComponents}
+                fixedHeaderContent={renderHeaderContent}
+                itemContent={renderRowContent}
               />
             </TableContainer>
           )}
