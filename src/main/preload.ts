@@ -8,10 +8,4 @@ contextBridge.exposeInMainWorld('versions', {
 
 contextBridge.exposeInMainWorld('electron', {
   getAwsCredentials: () => ipcRenderer.invoke('get-aws-credentials'),
-  saveAwsCredentials: (credentials: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    region: string;
-    endpoint?: string;
-  }) => ipcRenderer.invoke('save-aws-credentials', credentials),
 });

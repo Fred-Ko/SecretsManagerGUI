@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AwsCredentials } from '../utils/aws';
 
 interface UseAwsCredentialsReturn {
@@ -10,15 +10,12 @@ interface UseAwsCredentialsReturn {
 }
 
 export function useAwsCredentials(): UseAwsCredentialsReturn {
-  const [awsCredentials, setAwsCredentials] = useState<AwsCredentials | null>(
-    null,
-  );
+  const [awsCredentials, setAwsCredentials] = useState<AwsCredentials | null>(null);
   const [isAwsSettingsOpen, setIsAwsSettingsOpen] = useState(false);
 
   const saveAwsCredentials = useCallback(
     async (credentials: AwsCredentials, onSaved?: () => void) => {
       try {
-        await window.electron.saveAwsCredentials(credentials);
         setAwsCredentials(credentials);
         setIsAwsSettingsOpen(false);
         if (onSaved) onSaved();
@@ -30,21 +27,6 @@ export function useAwsCredentials(): UseAwsCredentialsReturn {
     },
     [],
   );
-
-  useEffect(() => {
-    const loadSavedCredentials = async () => {
-      try {
-        const savedCredentials = await window.electron.getAwsCredentials();
-        if (savedCredentials && savedCredentials.region && !awsCredentials) {
-          setAwsCredentials(savedCredentials as AwsCredentials);
-        }
-      } catch (error) {
-        console.error('Failed to load saved credentials:', error);
-      }
-    };
-
-    loadSavedCredentials();
-  }, [awsCredentials]);
 
   const openAwsSettings = useCallback(() => {
     setIsAwsSettingsOpen(true);

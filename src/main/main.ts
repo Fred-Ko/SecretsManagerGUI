@@ -9,18 +9,6 @@ import { resolveHtmlPath } from './util';
 import MenuBuilder from './menu';
 
 // 앱 설정 파일 경로
-const APP_CONFIG_DIR = '.secrets-manager';
-const AWS_CONFIG_FILE = 'aws-config.json';
-
-function ensureConfigDir() {
-  if (!existsSync(APP_CONFIG_DIR)) {
-    mkdirSync(APP_CONFIG_DIR);
-  }
-}
-
-function getAppConfigPath() {
-  return path.join(APP_CONFIG_DIR, AWS_CONFIG_FILE);
-}
 
 // AppUpdater 클래스 추가
 class AppUpdater {
@@ -114,7 +102,6 @@ const createWindow = async () => {
 app
   .whenReady()
   .then(() => {
-    ensureConfigDir();
     createWindow();
 
     app.on('activate', () => {
@@ -171,17 +158,5 @@ ipcMain.handle('get-aws-credentials', async () => {
   } catch (error) {
     console.error('Failed to load AWS credentials:', error);
     return null;
-  }
-});
-
-// AWS 자격 증명 저장
-ipcMain.handle('save-aws-credentials', async (_, credentials) => {
-  try {
-    ensureConfigDir();
-    const appConfigPath = getAppConfigPath();
-    writeFileSync(appConfigPath, JSON.stringify(credentials, null, 2));
-  } catch (error) {
-    console.error('Failed to save AWS credentials:', error);
-    throw new Error('AWS 자격 증명을 저장하는데 실패했습니다.');
   }
 });
