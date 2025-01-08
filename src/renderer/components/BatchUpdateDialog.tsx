@@ -21,7 +21,11 @@ interface Props {
   onUpdate: (
     updates: Array<{ secret: Secret; key: string; newValue: string }>,
   ) => Promise<void>;
-  selectedSecrets: Secret[];
+  selectedSecrets: Array<{
+    secret: Secret;
+    key: string;
+    value: string;
+  }>;
 }
 
 interface UpdatePair {
@@ -81,29 +85,18 @@ export default function BatchUpdateDialog({
 
     const results: PreviewResult[] = [];
 
-    // 각 시크릿에 대해 업데이트할 내용 생성
-    for (const secret of selectedSecrets) {
-      if (!secret.SecretString) continue;
-
-      try {
-        const value = JSON.parse(secret.SecretString);
-        if (typeof value !== 'object' || value === null) continue;
-
-        // 각 업데이트 쌍에 대해 처리
-        for (const pair of updatePairs) {
-          Object.entries(value).forEach(([key, val]) => {
-            if (String(val) === pair.oldValue) {
-              results.push({
-                secretName: secret.Name || '',
-                key,
-                oldValue: pair.oldValue,
-                newValue: pair.newValue,
-              });
-            }
+    // 각 선택된 시크릿-키 쌍에 대해 업데이트할 내용 생성
+    for (const { secret, key, value } of selectedSecrets) {
+      // 각 업데이트 쌍에 대해 처리
+      for (const pair of updatePairs) {
+        if (value === pair.oldValue) {
+          results.push({
+            secretName: secret.Name || '',
+            key,
+            oldValue: pair.oldValue,
+            newValue: pair.newValue,
           });
         }
-      } catch (err) {
-        console.error('Failed to parse secret value:', err);
       }
     }
 
@@ -120,7 +113,7 @@ export default function BatchUpdateDialog({
     try {
       await onUpdate(
         previewResults.map(({ secretName, key, newValue }) => ({
-          secret: selectedSecrets.find((s) => s.Name === secretName)!,
+          secret: selectedSecrets.find((s) => s.secret.Name === secretName)!.secret,
           key,
           newValue,
         })),

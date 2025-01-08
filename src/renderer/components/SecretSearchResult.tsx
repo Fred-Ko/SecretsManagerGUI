@@ -471,15 +471,16 @@ export default function SecretSearchResult({
     parsedSecrets.forEach(({ secret, entries }) => {
       // 시크릿 이름으로 필터링
       const name = (secret.Name || '').toLowerCase();
-      if (
-        nameSearchTerms.length > 0 &&
-        !nameSearchTerms.every((term) => name.includes(term.toLowerCase()))
-      ) {
-        return;
-      }
-      // 현재 입력 중인 검색어로도 필터링
-      if (nameSearchText && !name.includes(secretName)) {
-        return;
+
+      // nameSearchTerms가 비어있고 현재 입력 중인 검색어도 없으면 필터링하지 않음
+      const shouldFilterByName = nameSearchTerms.length > 0 || nameSearchText;
+      if (shouldFilterByName) {
+        if (
+          (nameSearchTerms.length > 0 && !nameSearchTerms.every((term) => name.includes(term.toLowerCase()))) ||
+          (nameSearchText && !name.includes(secretName))
+        ) {
+          return;
+        }
       }
 
       // 키/값 검색어로 필터링
@@ -502,7 +503,7 @@ export default function SecretSearchResult({
     });
 
     return results;
-  }, [parsedSecrets, nameSearchText, searchText, currentSearchType]);
+  }, [parsedSecrets, nameSearchText, nameSearchTerms, searchText, currentSearchType]);
 
   const handleCopy = useCallback(
     (text: string) => {
@@ -1088,9 +1089,11 @@ export default function SecretSearchResult({
           setSelectedResults([]);
           setIsBatchUpdateOpen(false);
         }}
-        selectedSecrets={Array.from(
-          new Set(selectedResults.map((r) => r.secret)),
-        )}
+        selectedSecrets={selectedResults.map(r => ({
+          secret: r.secret,
+          key: r.key,
+          value: r.value
+        }))}
       />
 
       <BatchAddDialog
