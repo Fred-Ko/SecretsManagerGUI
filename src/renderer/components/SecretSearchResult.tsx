@@ -151,7 +151,7 @@ const TableComponent = React.memo((props: any) => (
 const TableHeadComponent = React.memo((props: any) => <TableHead {...props} />);
 
 const TableBodyComponent = React.memo(
-  React.forwardRef<HTMLTableSectionElement>((props, ref) => (
+  React.forwardRef<HTMLTableSectionElement, any>((props, ref) => (
     <TableBody {...props} ref={ref} />
   )),
 );
@@ -169,6 +169,7 @@ const HeaderContent = React.memo(
     selectedResults,
     totalResults,
     onSelectAll,
+    mode,
   }: {
     columnWidths: { name: number; key: number; value: number };
     currentResizer: string | null;
@@ -180,20 +181,23 @@ const HeaderContent = React.memo(
     selectedResults: SearchResult[];
     totalResults: number;
     onSelectAll: (checked: boolean) => void;
+    mode?: 'search' | 'batch-update' | 'batch-add';
   }) => (
     <TableRow>
-      <StyledCheckboxCell>
-        <Checkbox
-          checked={
-            selectedResults.length > 0 &&
-            selectedResults.length === totalResults
-          }
-          indeterminate={
-            selectedResults.length > 0 && selectedResults.length < totalResults
-          }
-          onChange={(e) => onSelectAll(e.target.checked)}
-        />
-      </StyledCheckboxCell>
+      {mode !== 'search' && (
+        <StyledCheckboxCell>
+          <Checkbox
+            checked={
+              selectedResults.length > 0 &&
+              selectedResults.length === totalResults
+            }
+            indeterminate={
+              selectedResults.length > 0 && selectedResults.length < totalResults
+            }
+            onChange={(e) => onSelectAll(e.target.checked)}
+          />
+        </StyledCheckboxCell>
+      )}
       <StyledTableCell
         sx={{
           width: columnWidths.name,
@@ -248,6 +252,7 @@ const RowContent = React.memo(
     onSelect,
     onCopy,
     onSecretSelect,
+    mode,
   }: {
     result: SearchResult;
     columnWidths: { name: number; key: number; value: number };
@@ -255,14 +260,17 @@ const RowContent = React.memo(
     onSelect: (checked: boolean) => void;
     onCopy: (text: string) => void;
     onSecretSelect: (secret: Secret) => void;
+    mode?: 'search' | 'batch-update' | 'batch-add';
   }) => (
     <>
-      <StyledCheckboxCell>
-        <Checkbox
-          checked={isSelected}
-          onChange={(e) => onSelect(e.target.checked)}
-        />
-      </StyledCheckboxCell>
+      {mode !== 'search' && (
+        <StyledCheckboxCell>
+          <Checkbox
+            checked={isSelected}
+            onChange={(e) => onSelect(e.target.checked)}
+          />
+        </StyledCheckboxCell>
+      )}
       <StyledTableCell
         sx={{
           width: columnWidths.name,
@@ -571,7 +579,7 @@ export default function SecretSearchResult({
     setCurrentResizer(null);
   }, []);
 
-  // 마지막 컬럼(value)은 남은 공간을 모두 차지하도록 설정
+  // 마지막 컬럼(value)은 남은 공간을 모두 차지하도도록 설정
   const valueColumnWidth = useMemo(() => {
     if (isResizing && currentResizer === 'value') {
       return columnWidths.value;
@@ -636,6 +644,7 @@ export default function SecretSearchResult({
         selectedResults={selectedResults}
         totalResults={searchResults.length}
         onSelectAll={handleSelectAll}
+        mode={mode}
       />
     ),
     [
@@ -645,6 +654,7 @@ export default function SecretSearchResult({
       searchResults.length,
       handleResizeStart,
       handleSelectAll,
+      mode,
     ],
   );
 
@@ -675,9 +685,10 @@ export default function SecretSearchResult({
         }}
         onCopy={handleCopy}
         onSecretSelect={onSecretSelect}
+        mode={mode}
       />
     ),
-    [columnWidths, selectedResults, handleCopy, onSecretSelect],
+    [columnWidths, selectedResults, handleCopy, onSecretSelect, mode],
   );
 
   return (
@@ -887,7 +898,26 @@ export default function SecretSearchResult({
             >
               <TableVirtuoso
                 style={{ height: '100%' }}
-                data={secrets}
+                data={secrets.filter(secret => {
+                  const name = (secret.Name || '').toLowerCase();
+
+                  // 검색어가 없으면 모든 시크릿 표시
+                  if (!nameSearchText && nameSearchTerms.length === 0) return true;
+
+                  // 태그로 추가된 검색어들 체크
+                  if (nameSearchTerms.length > 0 && !nameSearchTerms.every(term =>
+                    name.includes(term.toLowerCase())
+                  )) {
+                    return false;
+                  }
+
+                  // 현재 입력 중인 검색어 체크
+                  if (nameSearchText && !name.includes(nameSearchText.toLowerCase())) {
+                    return false;
+                  }
+
+                  return true;
+                })}
                 components={{
                   Table: (props: any) => (
                     <Table
